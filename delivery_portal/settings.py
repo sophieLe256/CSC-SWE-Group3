@@ -38,7 +38,11 @@ ROOT_URLCONF = 'delivery_portal.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [os.path.join(BASE_DIR, 'delivery_portal/templates')],
+        'DIRS': [
+	     os.path.join(BASE_DIR, 'templates'),
+            #os.path.join(BASE_DIR, 'delivery_portal/templates'),
+            os.path.join(BASE_DIR, 'frontend/build'),  # Add this line
+        ],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [

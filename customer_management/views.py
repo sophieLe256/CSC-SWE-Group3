@@ -15,3 +15,4 @@ def customer_portal(request):
 
 def business_portal(request):
   return render(request, 'business/business_portal.html')
+  
