@@ -18,6 +18,8 @@ INSTALLED_APPS = [
     'inventory',
     'customer',
     'address',
+    'quote',
+    'tracking',
 ]
 
 

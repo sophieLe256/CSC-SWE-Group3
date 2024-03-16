@@ -10,9 +10,41 @@
         <a href="{% url 'business_portal' %}"><button>Business Login</button></a>
     </div>
     <ul>
-        <li>Item 1</li>
-        <li>Item 2</li>
+        <section class="services-section">
+            <!-- Existing content -->
+          </section>
+ 
+          <section class="quote-section">
+            <h3>Get a Quote</h3>
+            <a href="{% url 'quote-request' %}"><button>Get a Quote</button></a>
+            <div id="quote-form-container" style="display: none;">
+              {% url 'quote-request' as quote_url %}
+              {% include 'quote/quote_form.html' with action_url=quote_url %}
+          </div>
+          </section>
+          <section class="tracking-section">
+            <h2>Track Your Shipment</h2>
+            <form method="post" action="{% url 'package-status' %}">
+              {% csrf_token %}
+              <label for="tracking_number">Tracking Number:</label>
+              <input type="text" id="tracking_number" name="tracking_number" required>
+              <button type="submit">Track</button>
+            </form>
+          </section>
         <li>Item 3</li>
     </ul>
 </div>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+         <script>
+           $(document).ready(function() {
+             $('#show-quote-form').click(function() {
+               $('#quote-form-container').toggle('fade');
+             });
+           });
+         </script>
+<section class="services-section">
+    <h1>Our Shipping Services</h1>
+    <p>We offer a wide range of shipping options to meet your needs.</p>
+    <!-- Add more content about your shipping services and value proposition -->
+  </section>
 {% endblock %}
