@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h1>Package Status</h1>
+{% if error %}
+<p>{{ error }}</p>
+{% else %}
+<p>Tracking Number: {{ shipment.tracking_number }}</p>
+<p>Package Description: {{ shipment.package_description }}</p>
+<p>Pickup Address: {{ shipment.pickup_address }}</p>
+<p>Delivery Address: {{ shipment.delivery_address }}</p>
+<p>Status: {{ shipment.status }}</p>
+<p>Last Updated: {{ shipment.updated_at }}</p>
+{% endif %}
+{% endblock %}

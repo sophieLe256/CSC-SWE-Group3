@@ -1,12 +1,40 @@
-<!-- delivery_portal/templates/base.html -->
+<!-- base.html -->
+
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Delivery Portal</title>
-    <!-- Add any head content here -->
+    <title>{% block title %}{% endblock %}</title>
+    <!-- Add any common CSS or JavaScript files here -->
 </head>
 <body>
-    {% block content %}
-    {% endblock %}
+    <div id="content">
+        {% block content %}
+        {% endblock %}
+    </div>
+
+    <script>
+        var sessionTimeout = 300000; // 5 minutes in milliseconds
+        var popupTimer;
+
+        function resetTimer() {
+            clearTimeout(popupTimer);
+            popupTimer = setTimeout(showPopup, sessionTimeout);
+        }
+
+        function showPopup() {
+            if (confirm("Are you still there?")) {
+                resetTimer();
+            } else {
+                window.location.href = "{% url 'customer-logout' %}";
+            }
+        }
+
+        // Reset the timer on user activity
+        document.addEventListener("mousemove", resetTimer);
+        document.addEventListener("keypress", resetTimer);
+
+        // Start the timer
+        resetTimer();
+    </script>
 </body>
 </html>

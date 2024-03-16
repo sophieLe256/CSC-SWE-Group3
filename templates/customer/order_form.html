@@ -1,0 +1,22 @@
+<!-- customer/templates/customer/order_form.html -->
+{% extends 'base.html' %}
+
+{% block content %}
+<h2>New Order</h2>
+<form method="post" action="{% url 'place-order' %}">
+    {% csrf_token %}
+    <label for="pickup_or_dropoff">Pickup or Drop-off:</label>
+    <select id="pickup_or_dropoff" name="pickup_or_dropoff">
+        <option value="pickup">Pickup</option>
+        <option value="dropoff">Drop-off</option>
+    </select>
+
+    <label for="package_dimensions">Package Dimensions (LxWxH):</label>
+    <input type="text" id="package_dimensions" name="package_dimensions" required>
+
+    <label for="package_weight">Package Weight:</label>
+    <input type="number" id="package_weight" name="package_weight" required>
+
+    <button type="submit">Place Order</button>
+</form>
+{% endblock %}
