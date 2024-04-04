@@ -2,9 +2,103 @@
 
 {% block content %}
 <h2>New Order</h2>
-<form method="post" action="{% url 'place-order' %}">
+<form method="post" id="order-form">
     {% csrf_token %}
-    {{ form.as_p }}
-    <button type="submit">Place Order</button>
+    <div class="form-group">
+        <label for="height">Height (in):</label>
+        <input type="number" id="height" name="height" required step="0.01" class="form-control">
+    </div>
+    <div class="form-group">
+        <label for="width">Width (in):</label>
+        <input type="number" id="width" name="width" required step="0.01" class="form-control">
+    </div>
+    <div class="form-group">
+        <label for="length">Length (in):</label>
+        <input type="number" id="length" name="length" required step="0.01" class="form-control">
+    </div>
+    <div class="form-group">
+        <label for="package_weight">Package Weight (lbs):</label>
+        <input type="number" id="package_weight" name="package_weight" required step="0.01" class="form-control">
+    </div>
+    <div class="form-group">
+        <label for="pickup_or_dropoff">Pickup or Dropoff:</label>
+        <div>
+            <input type="radio" id="pickup" name="pickup_or_dropoff" value="pickup" required>
+            <label for="pickup">Pickup</label>
+        </div>
+        <div>
+            <input type="radio" id="dropoff" name="pickup_or_dropoff" value="dropoff" required>
+            <label for="dropoff">Dropoff</label>
+        </div>
+    </div>
+    <div class="form-group">
+        <label for="pickup_address">Pickup Address:</label>
+        <input type="text" id="pickup_address" name="pickup_address" class="form-control">
+    </div>
+    <div class="form-group">
+        <label for="delivery_address">Delivery Address:</label>
+        <input type="text" id="delivery_address" name="delivery_address" required class="form-control">
+    </div>
+    <div class="form-group">
+        <label for="shipping_type">Shipping Type:</label>
+        <select id="shipping_type" name="shipping_type" required class="form-control">
+            <option value="ground">Ground</option>
+            <option value="priority">Priority</option>
+            <option value="nextDay">Next Day</option>
+        </select>
+    </div>
+    <button type="button" id="estimate-btn" class="btn btn-primary">Get Estimate</button>
+    <button type="submit" class="btn btn-success">Place Order</button>
 </form>
+
+<div id="estimate-container" style="display: none;">
+    <h3>Estimated Cost Breakdown</h3>
+    <table class="table">
+        <tr>
+            <th>Shipping</th>
+            <td id="shipping-cost"></td>
+        </tr>
+        <tr>
+            <th>Handling</th>
+            <td id="handling-cost"></td>
+        </tr>
+        <tr>
+            <th>Subtotal</th>
+            <td id="subtotal-cost"></td>
+        </tr>
+        <tr>
+            <th>Tax</th>
+            <td id="tax-cost"></td>
+        </tr>
+        <tr>
+            <th>Total</th>
+            <td id="total-cost"></td>
+        </tr>
+    </table>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+    $(document).ready(function() {
+        $('#estimate-btn').click(function() {
+            var formData = $('#order-form').serialize();
+            $.ajax({
+                url: '{% url "place-order" %}',
+                type: 'POST',
+                data: formData + '&estimate=true',
+                success: function(response) {
+                    $('#shipping-cost').text('$' + response.shipping.toFixed(2));
+                    $('#handling-cost').text('$' + response.handling.toFixed(2));
+                    $('#subtotal-cost').text('$' + response.subtotal.toFixed(2));
+                    $('#tax-cost').text('$' + response.tax.toFixed(2));
+                    $('#total-cost').text('$' + response.total.toFixed(2));
+                    $('#estimate-container').show();
+                },
+                error: function(xhr, status, error) {
+                    console.error(error);
+                }
+            });
+        });
+    });
+</script>
 {% endblock %}

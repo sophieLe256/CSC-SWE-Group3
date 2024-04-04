@@ -88,7 +88,7 @@ STATIC_URL = '/static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 LOGIN_URL = '/customer/login/'
 LOGIN_REDIRECT_URL = '/customer-dashboard/'
-SESSION_COOKIE_AGE = 400
+SESSION_COOKIE_AGE = 900
 SESSION_SAVE_EVERY_REQUEST = True
 
 

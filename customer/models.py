@@ -37,7 +37,7 @@ class Admin(models.Model):
 
 
 class Package(models.Model):
-    customer = models.ForeignKey(Customer, on_delete=models.CASCADE)
+    customer = models.ForeignKey(Customer, on_delete=models.CASCADE, related_name='customer_packages')
     height = models.IntegerField()
     width = models.IntegerField()
     length = models.IntegerField()
@@ -53,31 +53,21 @@ class Package(models.Model):
 
 
 
-class Shipment(models.Model):
-    tracking_number = models.CharField(max_length=20, unique=True)
-    package_description = models.TextField(null=True, blank=True)
-    pickup_address = models.CharField(max_length=255)
-    delivery_address = models.CharField(max_length=255)
-    status = models.CharField(max_length=20, default='Processing')
-    updated_at = models.DateTimeField(auto_now=True)
-    customer = models.ForeignKey(Customer, on_delete=models.CASCADE)
-
-
 class Order(models.Model):
     order_number = models.CharField(max_length=20, unique=True)
-    package_dimensions = models.CharField(max_length=20)
+    height = models.DecimalField(max_digits=5, decimal_places=2, default=0.00)
+    width = models.DecimalField(max_digits=5, decimal_places=2, default=0.00)
+    length = models.DecimalField(max_digits=5, decimal_places=2, default=0.00)
     package_weight = models.DecimalField(max_digits=5, decimal_places=2)
     pickup_or_dropoff = models.CharField(max_length=10)
     pickup_address = models.CharField(max_length=255, blank=True, null=True)
     delivery_address = models.CharField(max_length=255, blank=True, null=True)
-    shipping_type = models.CharField(max_length=20, blank=True, null=True)
+    shipping_type = models.CharField(max_length=20, default='')  # Add this line
     estimated_cost = models.DecimalField(max_digits=10, decimal_places=2)
     status = models.CharField(max_length=20, default='Processing')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE)
-
-
 
 
 class Feedback(models.Model):

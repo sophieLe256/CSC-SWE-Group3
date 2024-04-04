@@ -10,40 +10,22 @@
 </form>
 
 <div id="package-status-container">
-    {% if shipment %}
+    {% if order %}
     <h2>Package Status</h2>
-    <p>Tracking Number: {{ shipment.tracking_number }}</p>
-    <p>Package Description: {{ shipment.package_description }}</p>
-    <p>Pickup Address: {{ shipment.pickup_address }}</p>
-    <p>Delivery Address: {{ shipment.delivery_address }}</p>
-    <p>Status: {{ shipment.status }}</p>
-    <p>Last Updated: {{ shipment.updated_at }}</p>
+    <p>Tracking Number: {{ order.order_number }}</p>
+    <p>Package Description: {{ order.description }}</p>
+    <p>Pickup Address: {{ order.pickup_address }}</p>
+    <p>Delivery Address: {{ order.delivery_address }}</p>
+    <p>Status: {{ order.status }}</p>
+    <p>Last Updated: {{ order.updated_at }}</p>
+    <p>Package Dimensions: {{ order.height }} x {{ order.width }} x {{ order.length }}</p>
+    {% if map_html %}
+    <div class="map-container">
+        {{ map_html|safe }}
+    </div>
+    {% endif %}
     {% elif error %}
     <p>{{ error }}</p>
     {% endif %}
 </div>
-
-<script>
-    document.getElementById('tracking-form').addEventListener('submit', function(event) {
-        event.preventDefault();
-        var trackingNumber = document.getElementById('tracking_number').value;
-        fetch('{% url 'package-status' %}', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-                'X-CSRFToken': '{{ csrf_token }}'
-            },
-            body: 'tracking_number=' + trackingNumber
-        })
-        .then(function(response) {
-            return response.text();
-        })
-        .then(function(data) {
-            document.getElementById('package-status-container').innerHTML = data;
-        })
-        .catch(function(error) {
-               console.error('Error:', error);
-           });
-       });
-   </script>
-   {% endblock %}
+{% endblock %}
