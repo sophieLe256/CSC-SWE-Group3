@@ -1,10 +1,11 @@
+{% extends 'customer/base.html' %} {% block content %}
 <!DOCTYPE html>
 <html lang="en">
 
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Business Portal</title>
+<title>Customer Dashboard</title>
 <style>
 body {
 	font-family: Arial, sans-serif;
@@ -41,11 +42,15 @@ body {
 }
 
 .tab-content {
-	display: block;
+	display: none;
 	padding: 20px;
 	border-radius: 5px;
 	background-color: #ffffff;
 	box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.tab-content.active {
+	display: block;
 }
 
 table {
@@ -61,7 +66,7 @@ th, td {
 }
 
 th {
-	background-color: #00415a;
+	background-color: #000435;
 	color: #ffffff;
 }
 
@@ -82,276 +87,291 @@ tr:nth-child(even) {
 .logout-button a:hover {
 	background-color: #ccc;
 }
+
+.profile-container {
+	display: flex;
+	justify-content: space-between;
+	margin-bottom: 30px;
+}
+
+.profile-info, .update-profile {
+	width: 48%;
+	padding: 20px;
+	background-color: #f5f5f5;
+	border-radius: 5px;
+	box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.profile-info p {
+	margin: 10px 0;
+}
+
+.update-profile form {
+	display: grid;
+	grid-gap: 10px;
+}
+
+.update-profile label {
+	font-weight: bold;
+}
+
+.update-profile input {
+	padding: 5px;
+	border-radius: 3px;
+	border: 1px solid #ccc;
+}
+
+.update-profile button {
+	padding: 10px;
+	background-color: #00415a;
+	color: #ffffff;
+	border: none;
+	border-radius: 5px;
+	cursor: pointer;
+}
+
+.update-profile button:hover {
+	background-color: #002d41;
+}
 </style>
 </head>
-<body>
-    <div class="tabs-container">
-        <div class="tabs-wrapper">
-            <div class="tab active-tab" onclick="openTab('Inventory')">Inventory</div>
-            <div class="tab" onclick="openTab('Drivers')">Drivers</div>
-            <div class="tab" onclick="openTab('Customers')">Customers</div>
-            <div class="tab" onclick="openTab('Packages')">Packages</div>
-            <div class="tab" onclick="openTab('Shipments')">Shipments</div>
-            <div class="tab" onclick="openTab('Feedback')">Feedback</div>
-            <div class="tab" onclick="openTab('Vehicles')">Vehicles</div>
-        </div>
-        <div class="logout-button">
-            <a href="{% url 'customer-logout' %}">Logout</a>
-        </div>
-    </div>
-    <div id="rest_of_the_page">
-        <div class="tab-content active-content" id="Inventory">
-            <h2>Inventory</h2>
-            <div id="inventory_content">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Order Number</th>
-                            <th>Customer</th>
-                            <th>Package Dimensions</th>
-                            <th>Package Weight</th>
-                            <th>Pickup Address</th>
-                            <th>Delivery Address</th>
-                            <th>Shipping Type</th>
-                            <th>Status</th>
-                            <th>Estimated Cost</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for order in orders %}
-                        <tr>
-                            <td>{{ order.order_number }}</td>
-                            <td>{{ order.customer.first_name }} {{ order.customer.last_name }}</td>
-                            <td>{{ order.height }} x {{ order.width }} x {{ order.length }}</td>
-                            <td>{{ order.package_weight }}</td>
-                            <td>{{ order.pickup_address }}</td>
-                            <td>{{ order.delivery_address }}</td>
-                            <td>{{ order.shipping_type }}</td>
-                            <td>
-                                <form action="{% url 'business:update-order-status' order.id %}" method="post">
-                                    {% csrf_token %}
-                                    <select name="status" onchange="this.form.submit()">
-                                        <option value="processing" {% if order.status == 'processing' %}selected{% endif %}>Processing</option>
-                                        <option value="delivered" {% if order.status == 'delivered' %}selected{% endif %}>Delivered</option>
-                                        <option value="canceled" {% if order.status == 'canceled' %}selected{% endif %}>Canceled</option>
-                                    </select>
-                                </form>
-                            </td>
-                            <td>{{ order.estimated_cost }}</td>
-                        </tr>
-                        {% empty %}
-                        <tr>
-                            <td colspan="9">No orders found.</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-        <!-- Other tab content remains the same -->
-        <div class="tab-content" id="Drivers">
-            <h2>Drivers</h2>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Driver ID</th>
-                        <th>Driver Name</th>
-                        <th>Vehicle</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for driver in drivers %}
-                    <tr>
-                        <td>{{ driver.driver_id }}</td>
-                        <td>{{ driver.driver_name }}</td>
-                        <td>{{ driver.vehicle.vehicle_model }} ({{ driver.vehicle.vehicle_plate }})</td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="3">No drivers found.</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-        <div class="tab-content" id="Customers">
-            <h2>Customers</h2>
-            <table>
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>First Name</th>
-                        <th>Last Name</th>
-                        <th>Address</th>
-                        <th>Email</th>
-                        <th>Phone</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for customer in customers %}
-                    <tr>
-                        <td>{{ customer.id }}</td>
-                        <td>{{ customer.first_name }}</td>
-                        <td>{{ customer.last_name }}</td>
-                        <td>{{ customer.address }}</td>
-                        <td>{{ customer.email }}</td>
-                        <td>{{ customer.phone }}</td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="6">No customers found.</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-        <div class="tab-content" id="Packages">
-            <h2>Packages</h2>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Package ID</th>
-                        <th>Customer</th>
-                        <th>Description</th>
-                        <th>Weight</th>
-                        <th>Dimensions</th>
-                        <th>Status</th>
-                        <th>Created At</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for package in packages %}
-                    <tr>
-                        <td>{{ package.package_id }}</td>
-                        <td>{{ package.customer.first_name }} {{ package.customer.last_name }}</td>
-                        <td>{{ package.package_description }}</td>
-                        <td>{{ package.package_weight }}</td>
-                        <td>{{ package.package_dimensions }}</td>
-                        <td>
-                            {% if package.package_status == 'pending' %}
-                            <form action="{% url 'business:update-package-status' package.package_id %}" method="post">
-                                {% csrf_token %}
-                                <select name="status" onchange="this.form.submit()">
-                                    <option value="pending" {% if package.package_status == 'pending' %}selected{% endif %}>Pending</option>
-                                    <option value="delivered" {% if package.package_status == 'delivered' %}selected{% endif %}>Delivered</option>
-                                    <option value="canceled" {% if package.package_status == 'canceled' %}selected{% endif %}>Canceled</option>
-                                </select>
-                            </form>
-                            {% else %}
-                            {{ package.package_status }}
-                            {% endif %}
-                        </td>
-                        <td>{{ package.created_at }}</td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="7">No packages found.</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-        <div class="tab-content" id="Shipments">
-            <h2>Shipments</h2>
-            <form action="{% url 'business:create-shipment' %}" method="post">
-                {% csrf_token %}
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Select</th>
-                            <th>Package ID</th>
-                            <th>Customer</th>
-                            <th>Status</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for package in packages %}
-                        <tr>
-                            <td><input type="checkbox" name="package_ids" value="{{ package.package_id }}"></td>
-                            <td>{{ package.package_id }}</td>
-                            <td>{{ package.customer.first_name }} {{ package.customer.last_name }}</td>
-                            <td>{{ package.package_status }}</td>
-                        </tr>
-                        {% empty %}
-                        <tr>
-                            <td colspan="4">No packages found.</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-                <button type="submit">Create Shipment</button>
-            </form>
-        </div>
-        <div class="tab-content" id="Feedback">
-            <h2>Feedback</h2>
-            <table>
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Customer</th>
-                        <th>Comment</th>
-                        <th>Created At</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for feedback in feedbacks %}
-                    <tr>
-                        <td>{{ feedback.id }}</td>
-                        <td>{{ feedback.customer.first_name }} {{ feedback.customer.last_name }}</td>
-                        <td>{{ feedback.comment }}</td>
-                        <td>{{ feedback.created_at }}</td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="4">No feedback found.</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-        <div class="tab-content" id="Vehicles">
-            <h2>Vehicles</h2>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Vehicle ID</th>
-                        <th>Model</th>
-                        <th>Plate Number</th>
-                        <th>Status</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for vehicle in vehicles %}
-                    <tr>
-                        <td>{{ vehicle.vehicle_id }}</td>
-                        <td>{{ vehicle.vehicle_model }}</td>
-                        <td>{{ vehicle.vehicle_plate }}</td>
-                        <td>{{ vehicle.vehicle_status }}</td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="4">No vehicles found.</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    </div>
-    <script>
-        function openTab(tabName) {
-            var i, x, tablinks;
-            x = document.getElementsByClassName("tab-content");
-            for (i = 0; i < x.length; i++) {
-                x[i].style.display = "none";
-            }
-            tablinks = document.getElementsByClassName("tab");
-            for (i = 0; i < x.length; i++) {
-                tablinks[i].className = tablinks[i].className.replace(" active-tab", "");
-            }
-            document.getElementById(tabName).style.display = "block";
-            event.currentTarget.className += " active-tab";
-        }
-    </script>
-</body>
 
-</html>
+<body>
+	<div class="tabs-container">
+		<div class="tabs-wrapper">
+			<div class="tab active-tab" onclick="openTab('Orders')">Orders</div>
+			<div class="tab" onclick="openTab('Tracking')">Tracking</div>
+			<div class="tab" onclick="openTab('Customer Service')">Customer
+				Service</div>
+			<div class="tab" onclick="openTab('Profile Settings')">Profile
+				Settings</div>
+		</div>
+		<div class="logout-button">
+			<a href="{% url 'customer-logout' %}">Logout</a>
+		</div>
+	</div>
+	<div id="rest_of_the_page">
+		<div id="Orders" class="tab-content active">
+			<div id="new-order">
+				<h2>New Order</h2>
+				<button onclick="window.location.href='{% url 'place-order' %}'"
+					class="btn btn-primary">Place an Order</button>
+			</div>
+			<h3>Active Orders</h3>
+			{% if active_orders %}
+			<table>
+				<thead>
+					<tr>
+						<th>Order Number</th>
+						<th>Package Dimensions</th>
+						<th>Package Weight</th>
+						<th>Pickup Address</th>
+						<th>Delivery Address</th>
+						<th>Shipping Type</th>
+						<th>Status</th>
+						<th>Estimated Cost</th>
+					</tr>
+				</thead>
+				<tbody>
+					{% for order in active_orders %}
+					<tr>
+						<td>{{ order.id }}</td>
+						<td>{{ order.height }} x {{ order.width }} x {{ order.length
+							}}</td>
+						<td>{{ order.package_weight }}</td>
+						<td>{{ order.pickup_address }}</td>
+						<td>{{ order.delivery_address }}</td>
+						<td>{{ order.shipping_type }}</td>
+						<td>{{ order.status }}</td>
+						<td>{{ order.estimated_cost }}</td>
+					</tr>
+					{% empty %}
+					<tr>
+						<td colspan="8">No active orders.</td>
+					</tr>
+					{% endfor %}
+				</tbody>
+			</table>
+			{% else %}
+			<table>
+				<thead>
+					<tr>
+						<th>Order Number</th>
+						<th>Package Dimensions</th>
+						<th>Package Weight</th>
+						<th>Pickup or Dropoff</th>
+						<th>Delivery Address</th>
+						<th>Shipping Type</th>
+						<th>Status</th>
+					</tr>
+				</thead>
+			</table>
+			<p>No active orders.</p>
+			{% endif %}
+			<h3>Past Orders</h3>
+			{% if past_orders %}
+			<table>
+				<thead>
+					<tr>
+						<th>Order Number</th>
+						<th>Package Dimensions</th>
+						<th>Package Weight</th>
+						<th>Pickup Address</th>
+						<th>Delivery Address</th>
+						<th>Shipping Type</th>
+						<th>Status</th>
+						<th>Estimated Cost</th>
+					</tr>
+				</thead>
+				<tbody>
+					{% for order in past_orders %}
+					<tr>
+						<td>{{ order.order_number }}</td>
+						<td>{{ order.package_dimensions }}</td>
+						<td>{{ order.package_weight }}</td>
+						<td>{{ order.pickup_address }}</td>
+						<td>{{ order.delivery_address }}</td>
+						<td>{{ order.shipping_type }}</td>
+						<td>{{ order.status }}</td>
+						<td>{{ order.estimated_cost }}</td>
+					</tr>
+					{% endfor %}
+				</tbody>
+			</table>
+			{% else %}
+			<table>
+				<thead>
+					<tr>
+						<th>Order Number</th>
+						<th>Package Dimensions</th>
+						<th>Package Weight</th>
+						<th>Pickup or Dropoff</th>
+						<th>Delivery Address</th>
+						<th>Shipping Type</th>
+						<th>Status</th>
+					</tr>
+				</thead>
+			</table>
+			<p>No past orders.</p>
+			{% endif %}
+		</div>
+		<div id="Tracking" class="tab-content">
+			<h2>Tracking</h2>
+			<form method="post" action="{% url 'package-status' %}">
+				{% csrf_token %} <label for="tracking_number">Tracking
+					Number:</label> <input type="text" id="tracking_number"
+					name="tracking_number" required>
+				<button type="submit">Track</button>
+			</form>
+			{% if active_shipments %}
+			<table>
+				<thead>
+					<tr>
+						<th>Tracking Number</th>
+						<th>Status</th>
+						<th>Last Updated</th>
+					</tr>
+				</thead>
+				<tbody>
+					{% for shipment in active_shipments %}
+					<tr>
+						<td>{{ shipment.tracking_number }}</td>
+						<td>{{ shipment.status }}</td>
+						<td>{{ shipment.updated_at }}</td>
+					</tr>
+					{% endfor %}
+				</tbody>
+			</table>
+			{% else %}
+			<p>No active shipments.</p>
+			{% endif %}
+		</div>
+		<div id="Customer Service" class="tab-content">
+			<h2>Customer Service</h2>
+			<div id="customer-service-form">
+				<form method="post"
+					action="{% url 'submit-customer-service-message' %}">
+					{% csrf_token %} <label for="message">Message:</label>
+					<textarea name="message" id="message" required></textarea>
+					<button type="submit">Submit</button>
+				</form>
+			</div>
+			<h3>Previous Messages</h3>
+			{% if customer_service_messages %}
+			<table>
+				<thead>
+					<tr>
+						<th>Message</th>
+						<th>Status</th>
+						<th>Created</th>
+					</tr>
+				</thead>
+				<tbody>
+					{% for message in customer_service_messages %}
+					<tr>
+						<td>{{ message.message }}</td>
+						<td>{{ message.status }}</td>
+						<td>{{ message.created_at }}</td>
+					</tr>
+					{% endfor %}
+				</tbody>
+			</table>
+			{% else %}
+			<p>No customer service messages yet.</p>
+			{% endif %}
+		</div>
+		<div id="Profile Settings" class="tab-content">
+			<h2>Profile Settings</h2>
+			<div class="profile-info">
+				<a href="{% url 'change-password' %}">Change Password</a>
+				<h3>Profile Information</h3>
+				<p>
+					<strong>Name:</strong> {{ customer.first_name }} {{
+					customer.last_name }}
+				</p>
+				<p>
+					<strong>Address:</strong> {{ customer.address }}
+				</p>
+				<p>
+					<strong>Email:</strong> {{ customer.email }}
+				</p>
+				<p>
+					<strong>Phone:</strong> {{ customer.phone }}
+				</p>
+			</div>
+			<div class="update-profile">
+				<h3>Update Profile</h3>
+				<form method="post">
+					{% csrf_token %} <label for="first_name">First Name:</label> <input
+						type="text" id="first_name" name="first_name"
+						value="{{ customer.first_name }}" required> <label
+						for="last_name">Last Name:</label> <input type="text"
+						id="last_name" name="last_name" value="{{ customer.last_name }}"
+						required> <label for="address">Address:</label> <input
+						type="text" id="address" name="address"
+						value="{{ customer.address }}" required> <label
+						for="email">Email:</label> <input type="email" id="email"
+						name="email" value="{{ customer.email }}" required> <label
+						for="phone">Phone:</label> <input type="tel" id="phone"
+						name="phone" value="{{ customer.phone }}" required>
+					<button type="submit" name="profile_form">Save Changes</button>
+				</form>
+			</div>
+		</div>
+	</div>
+	<script>
+		function openTab(tabName) {
+			var tabContents = document.getElementsByClassName("tab-content");
+			for (var i = 0; i < tabContents.length; i++) {
+				tabContents[i].classList.remove("active");
+			}
+			var tabs = document.getElementsByClassName("tab");
+			for (var i = 0; i < tabs.length; i++) {
+				tabs[i].classList.remove("active-tab");
+			}
+			document.getElementById(tabName).classList.add("active");
+			event.currentTarget.classList.add("active-tab");
+		}
+	</script>
+</body>
+{% endblock %}

@@ -1,6 +1,7 @@
 import folium
 from django.shortcuts import render
-from tracking.models import Shipment
+from customer.models import Order
+from django.core.exceptions import ObjectDoesNotExist
 
 def package_status(request):
     if request.method == 'POST':
@@ -19,7 +20,7 @@ def package_status(request):
                 'map_html': map_html
             }
             return render(request, 'tracking/package_status.html', context)
-        except Order.DoesNotExist:
+        except ObjectDoesNotExist:
             context = {
                 'error': 'Invalid tracking number.'
             }

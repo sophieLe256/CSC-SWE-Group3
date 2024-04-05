@@ -11,6 +11,13 @@ class Package(models.Model):
     package_status = models.CharField(max_length=50, null=True, blank=True)
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE)
     created_at = models.DateTimeField(default=timezone.now)
+    STATUS_CHOICES = [
+        ('processing', 'Processing'),
+        ('shipped', 'Shipped'),
+        ('delivered', 'Delivered'),
+        ('cancelled', 'Cancelled'),
+    ]
+    package_status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='processing')
 
 class Shipment(models.Model):
     id = models.AutoField(primary_key=True)

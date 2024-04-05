@@ -148,35 +148,23 @@ def customer_login(request):
     if request.method == 'POST':
         email = request.POST.get('email')
         password = request.POST.get('password')
-
-        print(f"Login attempt - Email: {email}, Password: {password}")
-
         user = authenticate(request, username=email, password=password)
-
-        print(f"Authenticated user: {user}")
-
         if user is not None:
             login(request, user)
             try:
-                admin = Admin.objects.get(user_id=user.id)
-                request.session['user_type'] = 'admin'
-                print("Admin user logged in")
-                return redirect('business:business-portal')
-            except Admin.DoesNotExist:
+                customer = Customer.objects.get(user_id=user.id)
+                request.session['user_type'] = 'customer'
+                return redirect('customer-dashboard')
+            except Customer.DoesNotExist:
                 try:
-                    customer = Customer.objects.get(user_id=user.id)
-                    request.session['user_type'] = 'customer'
-                    print("Customer user logged in")
-                    return redirect('customer-dashboard')
-                except Customer.DoesNotExist:
+                    admin = Admin.objects.get(user_id=user.id)
+                    request.session['user_type'] = 'admin'
+                    return redirect('business:business-portal')
+                except Admin.DoesNotExist:
                     messages.error(request, 'Invalid user.')
-                    print("Invalid user")
         else:
             messages.error(request, 'Invalid email or password.')
-            print("Authentication failed")
-    
     return render(request, 'customer/customer_login.html')
-
 
 
 
