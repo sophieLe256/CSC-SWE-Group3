@@ -1,11 +1,22 @@
 from django import forms
 from .models import Customer, Feedback
+from .models import Order
 
+SHIPPING_CHOICES = [
+    ('ground', 'Ground'),
+    ('priority', 'Priority'),
+    ('nextDay', 'Next Day'),
+]
 
-class OrderForm(forms.Form):
-    pickup_or_dropoff = forms.ChoiceField(choices=[('pickup', 'Pickup'), ('dropoff', 'Drop-off')], widget=forms.Select())
-    package_dimensions = forms.CharField(max_length=20, help_text='Enter dimensions in LxWxH format (e.g., 12x6x4)')
-    package_weight = forms.DecimalField(max_digits=5, decimal_places=2, help_text='Enter weight in pounds')
+class OrderForm(forms.ModelForm):
+    shipping_type = forms.ChoiceField(choices=SHIPPING_CHOICES)
+    height = forms.DecimalField(max_digits=5, decimal_places=2)
+    width = forms.DecimalField(max_digits=5, decimal_places=2)
+    length = forms.DecimalField(max_digits=5, decimal_places=2)
+
+    class Meta:
+        model = Order
+        fields = ['height', 'width', 'length', 'package_weight', 'pickup_or_dropoff', 'pickup_address', 'delivery_address', 'shipping_type']
 
 class FeedbackForm(forms.ModelForm):
     class Meta:

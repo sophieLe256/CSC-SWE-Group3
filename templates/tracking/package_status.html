@@ -1,15 +1,31 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<h1>Package Status</h1>
-{% if error %}
-<p>{{ error }}</p>
-{% else %}
-<p>Tracking Number: {{ shipment.tracking_number }}</p>
-<p>Package Description: {{ shipment.package_description }}</p>
-<p>Pickup Address: {{ shipment.pickup_address }}</p>
-<p>Delivery Address: {{ shipment.delivery_address }}</p>
-<p>Status: {{ shipment.status }}</p>
-<p>Last Updated: {{ shipment.updated_at }}</p>
-{% endif %}
+<h1>Track Your Shipment</h1>
+<form id="tracking-form" method="post" action="{% url 'package-status' %}">
+    {% csrf_token %}
+    <label for="tracking_number">Tracking Number:</label>
+    <input type="text" id="tracking_number" name="tracking_number" required>
+    <button type="submit">Track</button>
+</form>
+
+<div id="package-status-container">
+    {% if order %}
+    <h2>Package Status</h2>
+    <p>Tracking Number: {{ order.order_number }}</p>
+    <p>Package Description: {{ order.description }}</p>
+    <p>Pickup Address: {{ order.pickup_address }}</p>
+    <p>Delivery Address: {{ order.delivery_address }}</p>
+    <p>Status: {{ order.status }}</p>
+    <p>Last Updated: {{ order.updated_at }}</p>
+    <p>Package Dimensions: {{ order.height }} x {{ order.width }} x {{ order.length }}</p>
+    {% if map_html %}
+    <div class="map-container">
+        {{ map_html|safe }}
+    </div>
+    {% endif %}
+    {% elif error %}
+    <p>{{ error }}</p>
+    {% endif %}
+</div>
 {% endblock %}
