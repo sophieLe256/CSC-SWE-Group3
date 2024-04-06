@@ -254,36 +254,42 @@ tr:nth-child(even) {
                 </tbody>
             </table>
         </div> -->
-        <div class="tab-content" id="Shipments">
+    <div class="tab-content" id="Shipments"> 
     <h2>Shipments</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Shipment ID</th>
+                <th>Package ID</th>
+                <th>Customer</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for shipment in shipments %}
+            <tr>
+                <td>{{ shipment.id }}</td>
+                <td>{{ shipment.package.package_id }}</td>
+                <td>{{ shipment.package.customer.first_name }} {{ shipment.package.customer.last_name }}</td>
+                <td>{{ shipment.package.package_status }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="4">No shipments found.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
     <form action="{% url 'business:create-shipment' %}" method="post">
         {% csrf_token %}
-        <table>
-            <thead>
-                <tr>
-                    <th>Select</th>
-                    <th>Package ID</th>
-                    <th>Customer</th>
-                    <th>Status</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for package in packages %}
-                {% if package.package_status == 'Processing' %}
-                <tr>
-                    <td><input type="checkbox" name="package_ids" value="{{ package.package_id }}"></td>
-                    <td>{{ package.package_id }}</td>
-                    <td>{{ package.customer.first_name }} {{ package.customer.last_name }}</td>
-                    <td>{{ package.package_status }}</td>
-                </tr>
-                {% endif %}
-                {% empty %}
-                <tr>
-                    <td colspan="4">No processing packages found.</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+        <label for="package">Select Package:</label>
+        <select name="package" id="package">
+            {% for package in packages %}
+                <option value="{{ package.package_id }}">{{ package.package_id }} - {{ package.customer.first_name }} {{ package.customer.last_name }}</option>
+            {% empty %}
+                <option>No processing packages found.</option>
+            {% endfor %}
+        </select>
         <button type="submit">Create Shipment</button>
     </form>
 </div>
@@ -293,20 +299,18 @@ tr:nth-child(even) {
             <table>
                 <thead>
                     <tr>
-                        <th>ID</th>
-                        <th>Customer</th>
-                        <th>Comment</th>
-                        <th>Created At</th>
+                        <th>Message</th>
+						<th>Status</th>
+						<th>Created</th>
                     </tr>
                 </thead>
                 <tbody>
-                    {% for feedback in feedbacks %}
-                    <tr>
-                        <td>{{ feedback.id }}</td>
-                        <td>{{ feedback.customer.first_name }} {{ feedback.customer.last_name }}</td>
-                        <td>{{ feedback.comment }}</td>
-                        <td>{{ feedback.created_at }}</td>
-                    </tr>
+                    {% for message in customer_service_messages %}
+					<tr>
+						<td>{{ message.message }}</td>
+						<td>{{ message.status }}</td>
+						<td>{{ message.created_at }}</td>
+					</tr>
                     {% empty %}
                     <tr>
                         <td colspan="4">No feedback found.</td>
@@ -317,6 +321,22 @@ tr:nth-child(even) {
         </div>
         <div class="tab-content" id="Vehicles">
             <h2>Vehicles</h2>
+            <form method="post" action="{% url 'business:add-vehicle' %}">
+                {% csrf_token %}
+                <label for="vehicle_model">Vehicle Model:</label>
+                <input type="text" name="vehicle_model" id="vehicle_model">
+                <br>
+                <label for="vehicle_plate">Vehicle Plate:</label>
+                <input type="text" name="vehicle_plate" id="vehicle_plate">
+                <br>
+                <label for="vehicle_status">Vehicle Status:</label>
+                <select name="vehicle_status" id="vehicle_status">
+                    <option value="available">Available</option>
+                    <option value="unavailable">Unavailable</option>
+                </select>
+                <br> 
+                <button type="submit">Add Vehicle</button> 
+            </form> 
             <table>
                 <thead>
                     <tr>

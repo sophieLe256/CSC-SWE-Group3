@@ -175,9 +175,8 @@ tr:nth-child(even) {
 				<tbody>
 					{% for order in active_orders %}
 					<tr>
-						<td>{{ order.id }}</td>
-						<td>{{ order.height }} x {{ order.width }} x {{ order.length
-							}}</td>
+						<td>{{ order.order_number }}</td>
+						<td>{{ order.height }} x {{ order.width }} x {{ order.length }}</td>
 						<td>{{ order.package_weight }}</td>
 						<td>{{ order.pickup_address }}</td>
 						<td>{{ order.delivery_address }}</td>
