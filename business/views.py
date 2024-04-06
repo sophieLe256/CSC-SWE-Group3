@@ -1,23 +1,38 @@
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.shortcuts import render, redirect, get_object_or_404
-from customer.models import Admin, Customer, Feedback, Order
+from customer.models import Admin, Customer, Feedback, Order, CustomerServiceMessage
 from django.contrib import messages
 from business.models import Package, Shipment, Driver, Vehicle
 from django.contrib.auth.models import User
+from django.urls import reverse 
 
 
 def is_admin(user):
-    return user.is_authenticated and hasattr(user, 'admin')
+    return user.is_authenticated and Admin.objects.filter(user_id=user.id).exists()
+    
 
 @login_required
 def business_portal(request):
+    print(f"User: {request.user}")
+    print(f"User type: {request.session.get('user_type')}")
+    if request.session.get('user_type') != 'admin':
+        print("User is not admin")
+        return redirect('customer-login')   
+    try:
+        admin = Admin.objects.get(user_id=request.user.id)
+    except Customer.DoesNotExist:
+        messages.error(request, 'User does not exist.')
+        print("Admin does not exist")
+        return redirect('customer-login')
+    
     packages = Package.objects.all().order_by('-created_at')
     orders = Order.objects.all().order_by('-created_at')
     customers = Customer.objects.all()
     drivers = Driver.objects.all()
     vehicles = Vehicle.objects.all()
-    feedbacks = Feedback.objects.all()
-
+    feedbacks = Feedback.objects.all().order_by('-created_at')
+    customer_service_messages = CustomerServiceMessage.objects.all().order_by('-created_at') 
+    
     context = {
         'packages': packages,
         'orders': orders,
@@ -25,6 +40,7 @@ def business_portal(request):
         'drivers': drivers,
         'vehicles': vehicles,
         'feedbacks': feedbacks,
+        'customer_service_messages': customer_service_messages,
         'active_tab': request.GET.get('tab', 'Inventory'),
     }
     return render(request, 'business/business_portal.html', context)
@@ -64,19 +80,6 @@ def update_package_status(request, package_id):
 
 @login_required
 @user_passes_test(is_admin)
-def create_shipment(request):
-    if request.method == 'POST':
-        package_ids = request.POST.getlist('package_ids')
-        packages = Package.objects.filter(package_id__in=package_ids)
-        shipment = Shipment.objects.create()
-        for package in packages:
-            package.shipment = shipment
-            package.save()
-        shipment.save()
-    return redirect('business:business-portal')
-
-@login_required
-@user_passes_test(is_admin)
 def inventory_view(request):
     packages = Package.objects.all()
     context = {'packages': packages, 'active_tab': 'Inventory'}
@@ -88,7 +91,9 @@ def add_driver(request):
     if request.method == 'POST':
         driver_name = request.POST.get('driver_name')
         vehicle_id = request.POST.get('vehicle_id')
-        vehicle = Vehicle.objects.get(vehicle_id=vehicle_id)
+        
+        vehicle = get_object_or_404(Vehicle, vehicle_id=vehicle_id) 
+        # vehicle = Vehicle.objects.get(vehicle_id=vehicle_id)
         Driver.objects.create(driver_name=driver_name, vehicle=vehicle)
         return redirect('business:business-portal')
     else:
@@ -106,10 +111,9 @@ def create_shipment(request):
             shipment = Shipment.objects.create()
             packages.update(shipment=shipment, package_status='Shipped')
             return redirect('business:business-portal')
-        else:
-            messages.error(request, 'No processing packages selected.')
+    else:
+        messages.error(request, 'No processing packages selected.')
     return redirect('business:business-portal')
-
 
 @login_required
 @user_passes_test(is_admin)
@@ -121,8 +125,30 @@ def add_vehicle(request):
         Vehicle.objects.create(vehicle_model=vehicle_model, vehicle_plate=vehicle_plate, vehicle_status=vehicle_status)
         return redirect('business:business-portal')
     else:
-        return render(request, 'business/add_vehicle.html')
+        vehicles = Vehicle.objects.all()  # Fetch all vehicles from the database
+        return render(request, 'business/add_vehicle.html', {'vehicles': vehicles})
     
+  
+@login_required
+@user_passes_test(is_admin)
+def add_driver(request):
+    if request.method == 'POST':
+        driver_name = request.POST.get('driver_name')
+        vehicle_id = request.POST.get('vehicle_id')
+        
+        # Retrieve the Vehicle object using the vehicle_id
+        vehicle = get_object_or_404(Vehicle, pk=vehicle_id)
+        
+        # Create the Driver object and associate it with the Vehicle object
+        driver = Driver.objects.create(driver_name=driver_name, vehicle_id=vehicle_id)
+        
+        return redirect('business:business-portal')
+    else:
+        vehicles = Vehicle.objects.all()
+        drivers = Driver.objects.select_related('vehicle').all()  # Include related Vehicle objects
+        context = {'vehicles': vehicles, 'drivers': drivers}
+        return render(request, 'business/add_driver.html', context)
+        
 @login_required
 @user_passes_test(is_admin)
 def create_shipment(request):
@@ -134,7 +160,12 @@ def create_shipment(request):
             package.shipment = shipment
             package.save()
         shipment.save()
-    return redirect('business:business-portal')
+        return redirect('business:business-portal')
+    else: 
+        packages = Package.objects.all()  # Or any queryset to fetch available packages
+        context = {'packages': packages}
+        return render(request, 'business/create_shipment.html', context)
+
 
 @login_required
 @user_passes_test(is_admin)
@@ -144,10 +175,8 @@ def update_order_status(request, order_id):
         new_status = request.POST.get('status')
         order.status = new_status
         order.save()
-        messages.success(request, 'Order status updated successfully.')
+    
     return redirect('business:business-portal')
-
-
 
 
 @login_required
