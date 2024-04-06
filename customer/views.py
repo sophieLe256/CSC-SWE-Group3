@@ -34,13 +34,18 @@ from django.utils import timezone
 @login_required
 def submit_customer_service_message(request):
     if request.method == 'POST':
-        customer = Customer.objects.get(user_id=request.user.id)
+        customer = Customer.objects.get(user_id=request.user.id) 
         message = request.POST.get('message')
         CustomerServiceMessage.objects.create(
             customer=customer,
             message=message,
             status='Open'
         )
+        Feedback.objects.create(
+            customer=customer,
+            comment=message
+        )
+        
         return redirect('customer-dashboard')
     return redirect('customer-dashboard')
 
@@ -288,6 +293,10 @@ def customer_dashboard(request):
                 message=message,
                 status='Open'
             )
+            Feedback.objects.create(
+            customer=customer,
+            comment=message
+            )
             return redirect('customer-dashboard')
 
     context = {
@@ -492,7 +501,6 @@ def admin_profile(request):
         return redirect('customer-profile')
 
 @login_required
-
 def business_portal(request):
     packages = Package.objects.all().order_by('-created_at')
     user_type = request.session.get('user_type')

@@ -74,3 +74,6 @@ class Feedback(models.Model):
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE)
     comment = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
+    
+    def __str__(self):
+        return f"Feedback from {self.customer} at {self.created_at}"
