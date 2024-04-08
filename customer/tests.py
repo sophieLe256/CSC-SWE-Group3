@@ -2,7 +2,7 @@ from django.test import TestCase, Client
 from django.urls import reverse
 from django.contrib.auth.models import User
 from .models import Customer, Admin, CustomerServiceMessage, Feedback, Order
-
+from django.core.exceptions import ValidationError
 
 class CustomerLoginTestCase(TestCase):
     def setUp(self):
@@ -225,3 +225,218 @@ class CustomerOrdersTestCase(TestCase):
         # Check that past and present orders are displayed
         self.assertContains(response, self.past_order.order_number)
         self.assertContains(response, self.present_order.order_number)
+        
+class ProfileUpdateTestCase(TestCase):
+    def setUp(self):
+        # Create a test user
+        self.test_user = User.objects.create_user(username='testuser', password='password123')
+
+        # Create a customer profile for the test user
+        self.customer_profile = Customer.objects.create(
+            user_id=self.test_user.id,
+            first_name='John',
+            last_name='Doe',
+            email='john.doe@example.com',
+            address='123 Main St',
+            phone='123-456-7890'
+        )
+
+        # Log the test user in
+        self.client.login(username='testuser', password='password123')
+
+    def test_profile_update(self):
+        # Define new valid profile information
+        new_first_name = 'Jane'
+        new_last_name = 'Smith'
+        new_address = '456 Elm St'
+        new_phone = '987-654-3210'
+
+        # Send POST request to update profile
+        response = self.client.post(reverse('customer-profile'), {
+            'first_name': new_first_name,
+            'last_name': new_last_name,
+            'address': new_address,
+            'phone': new_phone
+        })
+
+        # Check if the profile was updated successfully
+        self.assertEqual(response.status_code, 200)
+
+        # Refresh the customer profile from the database
+        self.customer_profile.refresh_from_db()
+
+        # Check if the profile information matches the updated values
+        self.assertEqual(self.customer_profile.first_name, new_first_name)
+        self.assertEqual(self.customer_profile.last_name, new_last_name)
+        self.assertEqual(self.customer_profile.address, new_address)
+        self.assertEqual(self.customer_profile.phone, new_phone)
+        
+class ProfileUpdateInvalidTestCase(TestCase):
+    def setUp(self):
+        # Create a test user
+        self.test_user = User.objects.create_user(username='testuser', password='password123')
+
+        # Create a customer profile for the test user
+        self.customer_profile = Customer.objects.create(
+            user_id=self.test_user.id,
+            first_name='John',
+            last_name='Doe',
+            email='john.doe@example.com',
+            address='123 Main St',
+            phone='123-456-7890'
+        )
+
+        # Log the test user in
+        self.client.login(username='testuser', password='password123')
+
+    def test_profile_update_invalid(self):
+        # Attempt to update profile with invalid information (e.g., empty first name)
+        response = self.client.post(reverse('customer-profile'), {
+            'first_name': '',  # Invalid: Empty first name
+            'last_name': 'Smith',
+            'address': '456 Elm St',
+            'phone': '987-654-3210'
+        })
+
+        # Check if the profile was not updated (expecting form validation errors)
+        self.assertEqual(response.status_code, 200)  # Assuming the view returns HTTP 200 on form validation failure
+        # Make a GET request to refresh the customer profile page
+        response = self.client.get(reverse('customer-profile'))
+        # Refresh the customer profile from the database
+        self.customer_profile.refresh_from_db()
+
+        # Check if the profile information remains unchanged
+        self.assertEqual(self.customer_profile.first_name, 'John')
+        self.assertEqual(self.customer_profile.last_name, 'Doe')
+        self.assertEqual(self.customer_profile.address, '123 Main St')
+        self.assertEqual(self.customer_profile.phone, '123-456-7890')
+
+class ValidOrderPlacementTestCase(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.customer_email = "customer@example.com"
+        self.customer_password = "Password123!"
+        # Create a customer user
+        self.customer_user = User.objects.create_user(username=self.customer_email, email=self.customer_email, password=self.customer_password)
+        # Create a customer profile
+        self.customer_profile = Customer.objects.create(user_id=self.customer_user.id, first_name='John', last_name='Doe', email=self.customer_email)
+
+    def test_place_valid_order(self):
+        # Log in the customer user
+        self.client.login(username=self.customer_email, password=self.customer_password)
+
+        # Simulate a POST request to place a new order
+        new_order_data = {
+            'height': 10.0,
+            'width': 10.0,
+            'length': 10.0,
+            'package_weight': 10.0,
+            'pickup_or_dropoff': 'pickup',
+            'pickup_address': '123 Main St, City, Country',
+            'delivery_address': '456 Elm St, City, Country',
+            'shipping_type': 'ground',
+        }
+        response = self.client.post(reverse('place-order'), new_order_data)
+        
+        # Check if the order has been successfully placed
+        self.assertEqual(response.status_code, 302)  # Expecting redirect after successful order placement
+        
+        # Check if the order is associated with the correct customer
+        self.assertTrue(Order.objects.filter(customer=self.customer_profile).exists())
+        
+class InvalidOrderPlacementTestCase(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.customer_email = "customer@example.com"
+        self.customer_password = "Password123!"
+        self.customer_user = User.objects.create_user(username=self.customer_email, email=self.customer_email, password=self.customer_password)
+        self.customer_profile = Customer.objects.create(user_id=self.customer_user.id, first_name='John', last_name='Doe', email=self.customer_email)
+
+    def test_place_invalid_order_missing_data(self):
+        self.client.login(username=self.customer_email, password=self.customer_password)
+        invalid_order_data = {}  # Missing required data
+        response = self.client.post(reverse('place-order'), invalid_order_data)
+        # Check that order was not created
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(Order.objects.exists())  # Ensure no order was created
+
+    def test_place_invalid_order_invalid_weight(self):
+        self.client.login(username=self.customer_email, password=self.customer_password)
+        invalid_order_data = {'package_weight': -5.0}  # Invalid weight
+        response = self.client.post(reverse('place-order'), invalid_order_data)
+        # Check that order was not created
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(Order.objects.exists())  # Ensure no order was created
+
+class ShippingAddressTestCase(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.customer_email = "customer@example.com"
+        self.customer_password = "Password123!"
+        # Create a customer user
+        self.customer_user = User.objects.create_user(username=self.customer_email, email=self.customer_email, password=self.customer_password)
+        # Create a customer profile
+        self.customer_profile = Customer.objects.create(user_id=self.customer_user.id, first_name='John', last_name='Doe', email=self.customer_email)
+
+    def test_place_valid_order(self):
+        # Log in the customer user
+        self.client.login(username=self.customer_email, password=self.customer_password)
+
+        # Simulate a POST request to place a new order without shipping address
+        new_order_data = {
+            'height': 10.0,
+            'width': 10.0,
+            'length': 10.0,
+            'package_weight': 10.0,
+            'pickup_or_dropoff': 'pickup',
+            'pickup_address': '123 Main St, City, Country',
+            'delivery_address': '456 Elm St, City, Country',
+            'shipping_type': 'ground',
+        }
+        response = self.client.post(reverse('place-order'), new_order_data)
+        
+        # Check if the order has been successfully placed
+        self.assertEqual(response.status_code, 302)  # Expecting redirect after successful order placement
+        
+        # Check if the order is associated with the correct customer
+        self.assertTrue(Order.objects.filter(customer=self.customer_profile).exists())
+        
+        # Update the order object with shipping address info
+        order = Order.objects.get(customer=self.customer_profile)
+        order.delivery_address = '789 Oak St, City, Country'
+        order.save()
+        
+        # Check if the shipping address info is correctly updated
+        self.assertEqual(order.delivery_address, '789 Oak St, City, Country')
+            
+class InvalidShippingAddressTestCase(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.customer_email = "customer@example.com"
+        self.customer_password = "Password123!"
+        # Create a customer user
+        self.customer_user = User.objects.create_user(username=self.customer_email, email=self.customer_email, password=self.customer_password)
+        # Create a customer profile
+        self.customer_profile = Customer.objects.create(user_id=self.customer_user.id, first_name='John', last_name='Doe', email=self.customer_email)
+
+    def test_invalid_shipping_address(self):
+        # Log in the customer user
+        self.client.login(username=self.customer_email, password=self.customer_password)
+
+        # Simulate a POST request to provide an invalid shipping address
+        invalid_shipping_address_data = {
+            'height': 10.0,
+            'width': 10.0,
+            'length': 10.0,
+            'package_weight': 10.0,
+            'pickup_or_dropoff': 'pickup',
+            'pickup_or_dropoff': 'pickup',  # Assume the same form is used for pickup or dropoff
+            'pickup_address': '',  # Invalid address (empty string)
+            'delivery_address': '', # Invalid address (empty string)
+            # Add other required fields as needed
+        }
+        response = self.client.post(reverse('place-order'), invalid_shipping_address_data)
+        
+        # Check if the response indicates that the order was not placed
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(Order.objects.exists())  # Ensure no order was created

@@ -36,7 +36,6 @@ def submit_customer_service_message(request):
     if request.method == 'POST':
         customer = Customer.objects.get(user_id=request.user.id) 
         message = request.POST.get('message')
-        
         if not message.strip():  
             return JsonResponse({'error': 'Message cannot be empty'}, status=400) 
         CustomerServiceMessage.objects.create(
@@ -110,23 +109,49 @@ def customer_signup(request):
         password = request.POST.get('password')
         user_type = request.POST.get('user_type')
 
+        print(f"Email: {email}")
+        print(f"Password: {password}")
+        print(f"User Type: {user_type}")
+
         if User.objects.filter(email=email).exists():
+            print("Email already exists.")
             messages.error(request, 'Email already exists. Please login.')
             return redirect('customer-login')
         else:
             user = User.objects.create_user(username=email, email=email, password=password)
+            print(f"User created: {user}")
+
             if user_type == 'customer':
                 Customer.objects.create(user_id=user.id, email=email)
+                print("Customer object created.")
             elif user_type == 'admin':
                 Admin.objects.create(user_id=user.id, email=email)
+                print("Admin object created.")
             else:
+                print("Invalid user type.")
                 messages.error(request, 'Invalid user type.')
                 return redirect('customer-signup')
+            
+            authenticated_user = authenticate(request, username=email, password=password)
+            
+            if authenticated_user is not None:
+                print("User authenticated successfully.")
+                login(request, authenticated_user)
+                
+                if user_type == 'customer':
+                    print("Redirecting to customer dashboard.")
+                    return redirect('customer-dashboard')
+                elif user_type == 'admin':
+                    print("Redirecting to business portal.")
+                    return redirect('business:business-portal')
+            else:
+                print("User authentication failed.")
+                messages.error(request, 'Failed to authenticate the user.')
+            
             messages.success(request, 'Account created successfully. Please login.')
             return redirect('customer-login')
+    
     return render(request, 'customer/customer_signup.html')
-
-redirect_authenticated_user = True
 
 def customer_login(request):
     if request.method == 'POST':
@@ -452,15 +477,26 @@ def process_complaint(complaint):
 @login_required
 def customer_profile(request):
     customer = Customer.objects.get(user_id=request.user.id)
+    
     if request.method == 'POST':
-        # Update customer profile information
-        customer.first_name = request.POST.get('first_name')
-        customer.last_name = request.POST.get('last_name')
-        customer.address = request.POST.get('address')
-        customer.phone = request.POST.get('phone')
-        customer.save()
-        messages.success(request, 'Profile updated successfully.')
-    return render(request, 'customer/customer_profile.html', {'customer': customer})
+        # Retrieve form data
+        first_name = request.POST.get('first_name', '').strip()
+        last_name = request.POST.get('last_name', '').strip()
+        address = request.POST.get('address', '').strip()
+        phone = request.POST.get('phone', '').strip()
+        
+        # Validate form data
+        if not first_name or not last_name or not address or not phone:
+            messages.error(request, 'All fields are required.')
+        else:
+            # Update customer profile information
+            customer.first_name = first_name
+            customer.last_name = last_name
+            customer.address = address
+            customer.phone = phone
+            customer.save()
+        
+    return render(request, 'customer/customer_dashboard.html', {'customer': customer})
 
 
 @login_required
