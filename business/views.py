@@ -12,27 +12,39 @@ def is_admin(user):
     
 
 @login_required
+@user_passes_test(is_admin)
 def business_portal(request):
-    print(f"User: {request.user}")
-    print(f"User type: {request.session.get('user_type')}")
-    if request.session.get('user_type') != 'admin':
-        print("User is not admin")
-        return redirect('customer-login')   
-    try:
-        admin = Admin.objects.get(user_id=request.user.id)
-    except Customer.DoesNotExist:
-        messages.error(request, 'User does not exist.')
-        print("Admin does not exist")
-        return redirect('customer-login')
-    
     packages = Package.objects.all().order_by('-created_at')
     orders = Order.objects.all().order_by('-created_at')
     customers = Customer.objects.all()
     drivers = Driver.objects.all()
     vehicles = Vehicle.objects.all()
-    feedbacks = Feedback.objects.all().order_by('-created_at')
+    feedbacks = Feedback.objects.all()
     customer_service_messages = CustomerServiceMessage.objects.all().order_by('-created_at') 
-    
+
+    if request.method == 'POST':
+        if 'create_vehicle' in request.POST:
+            vehicle_model = request.POST.get('vehicle_model')
+            vehicle_plate = request.POST.get('vehicle_plate')
+            vehicle_status = request.POST.get('vehicle_status')
+            volume_capacity = request.POST.get('volume_capacity')
+            weight_capacity = request.POST.get('weight_capacity')
+            
+            if vehicle_model and vehicle_plate and vehicle_status and volume_capacity and weight_capacity:
+                Vehicle.objects.create(
+                    vehicle_model=vehicle_model,
+                    vehicle_plate=vehicle_plate,
+                    vehicle_status=vehicle_status,
+                    volume_capacity=volume_capacity,
+                    weight_capacity=weight_capacity
+                )
+            else:
+                messages.error(request, 'All fields are required.')
+        elif 'remove_vehicle' in request.POST:
+            vehicle_id = request.POST.get('vehicle_id')
+            Vehicle.objects.filter(vehicle_id=vehicle_id).delete()
+
+
     context = {
         'packages': packages,
         'orders': orders,
@@ -46,8 +58,36 @@ def business_portal(request):
     return render(request, 'business/business_portal.html', context)
 
 
+
 def home(request):
     return render(request, 'home.html')
+
+@login_required
+@user_passes_test(is_admin)
+def assign_package_to_vehicle(request, package_id):
+    package = get_object_or_404(Package, package_id=package_id)
+    vehicles = Vehicle.objects.filter(status='Available').order_by('available_space')
+    
+    if request.method == 'POST':
+        vehicle_id = request.POST.get('vehicle_id')
+        vehicle = get_object_or_404(Vehicle, vehicle_id=vehicle_id)
+        
+        if vehicle.available_space >= package.package_weight:
+            package.vehicle = vehicle
+            package.package_status = 'shipped'
+            package.save()
+            
+            vehicle.available_space -= package.package_weight
+            vehicle.save()
+            
+            messages.success(request, 'Package assigned to vehicle successfully.')
+        else:
+            messages.error(request, 'Insufficient space in the selected vehicle.')
+        
+        return redirect('business:business-portal')
+    
+    context = {'package': package, 'vehicles': vehicles}
+    return render(request, 'business/assign_package_to_vehicle.html', context)
 
 
 def handle_package_action(request):
@@ -105,15 +145,41 @@ def add_driver(request):
 @user_passes_test(is_admin)
 def create_shipment(request):
     if request.method == 'POST':
-        package_ids = request.POST.getlist('package_ids')
-        packages = Package.objects.filter(package_id__in=package_ids, package_status='Processing')
-        if packages.exists():
+        data = json.loads(request.body)
+        shipment_id = data.get('shipmentId')
+        package_ids = data.get('package_ids')
+        vehicle_id = data.get('vehicle_id')
+
+        if shipment_id == 'new':
             shipment = Shipment.objects.create()
-            packages.update(shipment=shipment, package_status='Shipped')
-            return redirect('business:business-portal')
-    else:
-        messages.error(request, 'No processing packages selected.')
-    return redirect('business:business-portal')
+        else:
+            shipment = get_object_or_404(Shipment, id=shipment_id)
+
+        packages = Package.objects.filter(package_id__in=package_ids, package_status='Processing')
+        vehicle = get_object_or_404(Vehicle, vehicle_id=vehicle_id)
+
+        if not vehicle.driver:
+            return JsonResponse({'error': 'Vehicle does not have a driver assigned'})
+
+        total_volume = sum(package.package_dimensions.split('x')[0] * package.package_dimensions.split('x')[1] * package.package_dimensions.split('x')[2] for package in packages)
+        total_weight = sum(package.package_weight for package in packages)
+
+        if total_volume > vehicle.available_volume or total_weight > vehicle.available_weight:
+            return JsonResponse({'error': 'Vehicle capacity exceeded'})
+
+        vehicle.available_volume -= total_volume
+        vehicle.available_weight -= total_weight
+        vehicle.save()
+
+        packages.update(shipment=shipment, package_status='Dispatched')
+        shipment.vehicle = vehicle
+        shipment.save()
+
+        package_ids = list(packages.values_list('package_id', flat=True))
+        return JsonResponse({'shipmentId': shipment.id, 'packageIds': package_ids})
+
+    return JsonResponse({'error': 'Invalid request method'})
+
 
 @login_required
 @user_passes_test(is_admin)
@@ -122,12 +188,34 @@ def add_vehicle(request):
         vehicle_model = request.POST.get('vehicle_model')
         vehicle_plate = request.POST.get('vehicle_plate')
         vehicle_status = request.POST.get('vehicle_status')
-        Vehicle.objects.create(vehicle_model=vehicle_model, vehicle_plate=vehicle_plate, vehicle_status=vehicle_status)
+        volume_capacity = request.POST.get('volume_capacity')
+        weight_capacity = request.POST.get('weight_capacity')
+        Vehicle.objects.create(
+            vehicle_model=vehicle_model,
+            vehicle_plate=vehicle_plate,
+            vehicle_status=vehicle_status,
+            volume_capacity=volume_capacity,
+            weight_capacity=weight_capacity
+        )
         return redirect('business:business-portal')
-    else:
-        vehicles = Vehicle.objects.all()  # Fetch all vehicles from the database
-        return render(request, 'business/add_vehicle.html', {'vehicles': vehicles})
-    
+    return redirect('business:business-portal')
+
+
+@login_required
+@user_passes_test(is_admin)
+def create_shipment(request):
+    if request.method == 'POST':
+        package_ids = request.POST.getlist('package_ids')
+        vehicle_id = request.POST.get('vehicle_id')
+        packages = Package.objects.filter(package_id__in=package_ids, package_status='Processing')
+        if packages.exists():
+            vehicle = Vehicle.objects.get(vehicle_id=vehicle_id)
+            shipment = Shipment.objects.create(vehicle=vehicle)
+            packages.update(shipment=shipment, package_status='Shipped')
+            return redirect('business:business-portal')
+        else:
+            messages.error(request, 'No processing packages selected.')
+    return redirect('business:business-portal')    
   
 @login_required
 @user_passes_test(is_admin)
@@ -136,17 +224,13 @@ def add_driver(request):
         driver_name = request.POST.get('driver_name')
         vehicle_id = request.POST.get('vehicle_id')
         
-        # Retrieve the Vehicle object using the vehicle_id
-        vehicle = get_object_or_404(Vehicle, pk=vehicle_id)
-        
-        # Create the Driver object and associate it with the Vehicle object
-        driver = Driver.objects.create(driver_name=driver_name, vehicle_id=vehicle_id)
-        
+        vehicle = get_object_or_404(Vehicle, vehicle_id=vehicle_id) 
+        # vehicle = Vehicle.objects.get(vehicle_id=vehicle_id)
+        Driver.objects.create(driver_name=driver_name, vehicle=vehicle)
         return redirect('business:business-portal')
     else:
         vehicles = Vehicle.objects.all()
-        drivers = Driver.objects.select_related('vehicle').all()  # Include related Vehicle objects
-        context = {'vehicles': vehicles, 'drivers': drivers}
+        context = {'vehicles': vehicles}
         return render(request, 'business/add_driver.html', context)
         
 @login_required
