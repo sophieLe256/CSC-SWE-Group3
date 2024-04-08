@@ -325,8 +325,7 @@ tr:nth-child(even) {
 				<a href="{% url 'change-password' %}">Change Password</a>
 				<h3>Profile Information</h3>
 				<p>
-					<strong>Name:</strong> {{ customer.first_name }} {{
-					customer.last_name }}
+					<strong>Name:</strong> {{ customer.first_name }} {{ customer.last_name }}
 				</p>
 				<p>
 					<strong>Address:</strong> {{ customer.address }}
@@ -340,7 +339,7 @@ tr:nth-child(even) {
 			</div>
 			<div class="update-profile">
 				<h3>Update Profile</h3>
-				<form method="post">
+				<form method="post" action="{% url 'customer-profile' %}">
 					{% csrf_token %} <label for="first_name">First Name:</label> <input
 						type="text" id="first_name" name="first_name"
 						value="{{ customer.first_name }}" required> <label
