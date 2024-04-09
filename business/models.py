@@ -1,5 +1,6 @@
 from django.db import models
 from customer.models import Customer
+from customer.models import Customer, Order
 from django.utils import timezone
 
     
@@ -41,6 +42,9 @@ class Package(models.Model):
     package_status = models.CharField(max_length=50, null=True, blank=True)
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE)
     created_at = models.DateTimeField(default=timezone.now)
+    date_ordered = models.DateTimeField(default=timezone.now)
+    customer_email = models.EmailField(null=True, blank=True, default='')
+    delivered_at = models.DateTimeField(null=True, blank=True)
     STATUS_CHOICES = [
         ('processing', 'Processing'),
         ('shipped', 'Shipped'),
@@ -50,3 +54,4 @@ class Package(models.Model):
     ]
     package_status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='processing')
     returned = models.BooleanField(default=False)
+    order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='package_set', default = '')
