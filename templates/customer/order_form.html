@@ -1,92 +1,378 @@
 {% extends 'customer/base.html' %}
 
 {% block content %}
-<h2>New Order</h2>
-<form method="post" id="order-form">
-    {% csrf_token %}
-    <div class="form-group">
-        <label for="height">Height (in):</label>
-        <input type="number" id="height" name="height" required step="0.01" class="form-control">
-    </div>
-    <div class="form-group">
-        <label for="width">Width (in):</label>
-        <input type="number" id="width" name="width" required step="0.01" class="form-control">
-    </div>
-    <div class="form-group">
-        <label for="length">Length (in):</label>
-        <input type="number" id="length" name="length" required step="0.01" class="form-control">
-    </div>
-    <div class="form-group">
-        <label for="package_weight">Package Weight (lbs):</label>
-        <input type="number" id="package_weight" name="package_weight" required step="0.01" class="form-control">
-    </div>
-    <div class="form-group">
-        <label for="pickup_or_dropoff">Pickup or Dropoff:</label>
-        <div>
-            <input type="radio" id="pickup" name="pickup_or_dropoff" value="pickup" required>
-            <label for="pickup">Pickup</label>
-        </div>
-        <div>
-            <input type="radio" id="dropoff" name="pickup_or_dropoff" value="dropoff" required>
-            <label for="dropoff">Dropoff</label>
-        </div>
-    </div>
-    <div class="form-group">
-        <label for="pickup_address">Pickup Address:</label>
-        <input type="text" id="pickup_address" name="pickup_address" class="form-control">
-    </div>
-    <div class="form-group">
-        <label for="delivery_address">Delivery Address:</label>
-        <input type="text" id="delivery_address" name="delivery_address" required class="form-control">
-    </div>
-    <div class="form-group">
-        <label for="shipping_type">Shipping Type:</label>
-        <select id="shipping_type" name="shipping_type" required class="form-control">
-            <option value="ground">Ground</option>
-            <option value="priority">Priority</option>
-            <option value="nextDay">Next Day</option>
-        </select>
-    </div>
-    <button type="button" id="estimate-btn" class="btn btn-primary">Get Estimate</button>
-    <button type="submit" class="btn btn-success">Place Order</button>
-</form>
 
-<div id="estimate-container" style="display: none;">
-    <h3>Estimated Cost Breakdown</h3>
-    <table class="table">
-        <tr>
-            <th>Shipping</th>
-            <td id="shipping-cost"></td>
-        </tr>
-        <tr>
-            <th>Handling</th>
-            <td id="handling-cost"></td>
-        </tr>
-        <tr>
-            <th>Subtotal</th>
-            <td id="subtotal-cost"></td>
-        </tr>
-        <tr>
-            <th>Tax</th>
-            <td id="tax-cost"></td>
-        </tr>
-        <tr>
-            <th>Total</th>
-            <td id="total-cost"></td>
-        </tr>
-    </table>
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&display=swap');
+
+    * {
+        --primary-color: #00415a;
+    }
+
+    body {
+        background-color: #f6f6f6;
+        font-family: 'Roboto', sans-serif;
+
+    }
+
+    .form-container {
+        display: flex;
+        justify-content: space-around;
+        animation: slideDown 1s ease forwards;
+    }
+
+    /* Define the slide down animation */
+    @keyframes slideDown {
+        from {
+            opacity: 0;
+            transform: translateY(-50px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .title {
+        text-align: center;
+        font-size: 40px;
+        font-weight: 500;
+        color: black;
+    }
+
+    .left-section,
+    .right-section {
+        flex: 1;
+        padding: 20px;
+    }
+
+    .left-section h2 {
+        margin-bottom: 20px;
+        font-size: 50px;
+        font-weight: bold;
+        color: #00415a;
+        text-align: center;
+    }
+
+    .left-section p {
+        font-size: 20px;
+        margin-bottom: 20px;
+    }
+
+    .left-section ul {
+        list-style-type: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .left-section ul li {
+        margin: 30px 0 30px 30px;
+        font-weight: bold;
+        font-size: 20px;
+
+    }
+
+    .left-section ul li span {
+        font-weight: bold;
+        color: #00415a;
+        font-size: 30px;
+        padding-top: 30px;
+
+    }
+
+    .right-section form {
+        max-width: 500px;
+        margin: 0 auto;
+        background-color: #f9f9f9;
+        padding: 20px;
+        border-radius: 5px;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
+    }
+
+    .right-section form p {
+        margin-bottom: 20px;
+    }
+
+    .right-section label {
+        display: block;
+        margin-bottom: 5px;
+    }
+
+    .right-section input[type="text"],
+    .right-section input[type="number"],
+    .right-section select {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        box-sizing: border-box;
+        font-size: 16px;
+    }
+
+    .right-section button {
+        display: block;
+        width: 100%;
+        padding: 15px;
+        background-color: #00415a;
+        color: #fff;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+        font-size: 16px;
+    }
+
+    .right-section button:hover {
+        background-color: #00415a;
+    }
+
+    .dashboard-link {
+        position: fixed;
+        top: 20px;
+        /* Adjust bottom position */
+        left: 20px;
+        padding: 10px 20px;
+        background-color: #00415a;
+        color: #fff;
+        text-decoration: none;
+        border-radius: 5px;
+        font-size: 16px;
+        z-index: 9999;
+    }
+
+    .dashboard-link:hover {
+        background-color: #4a76a8;
+    }
+
+    button {
+        margin-top: 20px;
+    }
+
+    .form-group {
+        margin-top: 10px;
+    }
+
+    .pickup {
+        display: flex;
+        align-items: center;
+        margin: 10px 10px;
+    }
+
+    .right-section label {
+        transform: translateY(4px);
+    }
+
+    .dropoff {
+        display: flex;
+        align-items: center;
+        margin: 10px 10px;
+    }
+
+    .btn {
+        display: flex;
+        justify-content: space-between;
+        margin: 10px 10px;
+    }
+
+    .btn button:hover {
+        background-color: 2b598a;
+    }
+
+    #estimate-btn {
+        background-color: #00415a;
+        color: #fff;
+        border: none;
+        border-radius: 5px;
+        padding: 12px 20px;
+        font-size: 16px;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+    }
+
+    #estimate-btn:hover {
+        background-color: #4a76a8;
+    }
+
+    @keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-50px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+    #estimate-container {
+        display: none;
+        margin-top: 40px;
+        padding: 20px;
+        border: 1px solid #ccc;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        border-radius: 5px;
+        max-width: 500px;
+        text-align: center;
+        background-color: #f9f9f9;
+        animation: slideDown 0.5s ease forwards;
+    }
+
+    #estimate-container h3 {
+        font-size: 20px;
+        margin-bottom: 10px;
+    }
+
+    #estimate-container table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 10px;
+    }
+
+    #estimate-container th,
+    #estimate-container td {
+        padding: 10px;
+    }
+
+    #estimate-container th {
+        font-weight: bold;
+        text-align: left;
+    }
+
+    #estimate-container td {
+        text-align: right;
+    }
+    
+    
+    
+</style>
+<h2 class="title">New Order</h2>
+<div class="form-container">
+    <!-- Left Section -->
+    <div class="left-section">
+        <p>Packages and pallets, big and small, we can offer you instant delivery options for your shipping needs, both
+            domestically and internationally. Fill out your shipment details below and we’ll provide services tailored
+            to your specific requirements. Simply pick the option that suits you best, and continue to book.</p>
+        <ul>
+            <li><span>1.</span> ENTER ORIGIN AND DESTINATION</li>
+            <li><span>2.</span> DESCRIBE YOUR SHIPMENT</li>
+            <li><span>3.</span> GET DELIVERY PRICES</li>
+            <li><span>4.</span> PROCEED WITH ONLINE BOOKING</li>
+        </ul>
+        <div id="estimate-container" style="display: none;">
+            <h3>Estimated Cost Breakdown</h3>
+            <table class="table">
+                <tr>
+                    <th>Shipping</th>
+                    <td id="shipping-cost"></td>
+                </tr>
+                <tr>
+                    <th>Handling</th>
+                    <td id="handling-cost"></td>
+                </tr>
+                <tr>
+                    <th>Subtotal</th>
+                    <td id="subtotal-cost"></td>
+                </tr>
+                <tr>
+                    <th>Tax</th>
+                    <td id="tax-cost"></td>
+                </tr>
+                <tr>
+                    <th style="border-top: 1px solid #ccc;">Total</th>
+                    <td style="border-top: 1px solid #ccc; font-weight: bold;" id="total-cost"></td>
+                </tr>
+            </table>
+        </div>
+    </div>
+    <!-- Right Section -->
+    <div class="right-section">
+        <form method="post" id="order-form">
+            <h4>Package Info:</h4>
+            {% csrf_token %}
+            <div class="form-group">
+                <label for="height">Height (in):</label>
+                <input type="number" id="height" name="height" required step="0.01" class="form-control">
+            </div>
+            <div class="form-group">
+                <label for="width">Width (in):</label>
+                <input type="number" id="width" name="width" required step="0.01" class="form-control">
+            </div>
+            <div class="form-group">
+                <label for="length">Length (in):</label>
+                <input type="number" id="length" name="length" required step="0.01" class="form-control">
+            </div>
+            <div class="form-group">
+                <label for="package_weight">Package Weight (lbs):</label>
+                <input type="number" id="package_weight" name="package_weight" required step="0.01"
+                    class="form-control">
+            </div>
+            <div class="form-group">
+                <label for="pickup_or_dropoff">
+                    <h4>Pickup or Dropoff:</h4>
+                </label>
+                <div>
+                    <div class="dropoff">
+                        <input type="radio" id="pickup" name="pickup_or_dropoff" value="pickup" required>
+                        <label for="pickup">Pickup</label>
+                    </div>
+                </div>
+                <div>
+                    <div class="pickup">
+                        <input type="radio" id="dropoff" name="pickup_or_dropoff" value="dropoff" required>
+                        <label for="dropoff">Dropoff</label>
+                    </div>
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="pickup_address">Pickup Address:</label>
+                <input type="text" id="pickup_address" name="pickup_address" class="form-control">
+            </div>
+            <div class="form-group">
+                <label for="delivery_address">Delivery Address:</label>
+                <input type="text" id="delivery_address" name="delivery_address" required class="form-control">
+            </div>
+            <div class="form-group">
+                <label for="shipping_type">
+                    <h4>Shipping Type:</h4>
+                </label>
+                <select id="shipping_type" name="shipping_type" required class="form-control">
+                    <option value="ground">Ground</option>
+                    <option value="priority">Priority</option>
+                    <option value="nextDay">Next Day</option>
+                </select>
+            </div>
+            <div class="btn">
+                <button type="button" id="estimate-btn" class="btn btn-primary">Get Estimate</button>
+                <button type="submit" class="btn btn-success">Place Order</button>
+            </div>
+        </form>
+    </div>
 </div>
+
+<a href="{% url 'customer-dashboard' %}" class="dashboard-link">Go back to dashboard</a>
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
-    $(document).ready(function() {
-        $('#estimate-btn').click(function() {
+    const pickupOrDropoffRadios = document.querySelectorAll('input[name="pickup_or_dropoff"]');
+    const pickupAddressInput = document.getElementById('pickup_address');
+    pickupOrDropoffRadios.forEach(radio => {
+        radio.addEventListener('change', function() {
+            if (this.value === 'dropoff') {
+                pickupAddressInput.style.display = 'none';
+            } else {
+                pickupAddressInput.style.display = 'block';
+            }
+        });
+    });
+    $(document).ready(function () {
+        $('#estimate-btn').click(function () {
             var formData = $('#order-form').serialize();
             $.ajax({
                 url: '{% url "place-order" %}',
                 type: 'POST',
                 data: formData + '&estimate=true',
-                success: function(response) {
+                success: function (response) {
                     $('#shipping-cost').text('$' + response.shipping.toFixed(2));
                     $('#handling-cost').text('$' + response.handling.toFixed(2));
                     $('#subtotal-cost').text('$' + response.subtotal.toFixed(2));
@@ -94,11 +380,13 @@
                     $('#total-cost').text('$' + response.total.toFixed(2));
                     $('#estimate-container').show();
                 },
-                error: function(xhr, status, error) {
+                error: function (xhr, status, error) {
                     console.error(error);
                 }
             });
         });
     });
 </script>
+
+
 {% endblock %}
