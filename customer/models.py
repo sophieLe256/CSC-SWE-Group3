@@ -10,8 +10,10 @@ class Customer(models.Model):
     last_name = models.CharField(max_length=50, null=True, blank=True)
     address = models.TextField(null=True, blank=True)
     email = models.EmailField(null=True, blank=True)
+    email_verified = models.BooleanField(default=False)
     phone = models.CharField(max_length=20, null=True, blank=True)
     is_admin = models.BooleanField(default=False)
+    notification_preference = models.BooleanField(default=True)
 
     def check_password(self, raw_password):
         return check_password(raw_password, str(self.user_id))
