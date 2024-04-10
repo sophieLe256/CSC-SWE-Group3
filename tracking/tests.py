@@ -13,7 +13,8 @@ class TrackOrderTestCase(TestCase):
         # Create a customer profile
         self.customer = Customer.objects.create(user_id=self.customer_user.id, first_name='John', last_name='Doe', email='customer@example.com')
         # Create an order
-        self.order = Order.objects.create(order_number='123456', customer=self.customer, package_weight=10.0, status='Processing',estimated_cost=0.0)
+        self.order = Order.objects.create(order_number='123456', customer=self.customer, package_weight=10.0, status='Processing',estimated_cost=0.0, 
+        pickup_address= '123 Main St, Anytown, NY 12345', delivery_address= '123 Main St, Anytown, NY 12345')
 
     def test_track_order_with_valid_tracking_number(self):
         # Simulate a POST request with a valid tracking number
