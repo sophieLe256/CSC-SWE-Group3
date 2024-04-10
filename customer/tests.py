@@ -332,8 +332,8 @@ class ValidOrderPlacementTestCase(TestCase):
             'length': 10.0,
             'package_weight': 10.0,
             'pickup_or_dropoff': 'pickup',
-            'pickup_address': '123 Main St, City, Country',
-            'delivery_address': '456 Elm St, City, Country',
+            'pickup_address': '123 Main St, Anytown, NY 12345',
+            'delivery_address': '123 Main St, Anytown, NY 12345',
             'shipping_type': 'ground',
         }
         response = self.client.post(reverse('place-order'), new_order_data)
@@ -389,8 +389,8 @@ class ShippingAddressTestCase(TestCase):
             'length': 10.0,
             'package_weight': 10.0,
             'pickup_or_dropoff': 'pickup',
-            'pickup_address': '123 Main St, City, Country',
-            'delivery_address': '456 Elm St, City, Country',
+            'pickup_address': '123 Main St, Anytown, NY 12345',
+            'delivery_address': '123 Main St, Anytown, NY 12345',
             'shipping_type': 'ground',
         }
         response = self.client.post(reverse('place-order'), new_order_data)
@@ -403,11 +403,11 @@ class ShippingAddressTestCase(TestCase):
         
         # Update the order object with shipping address info
         order = Order.objects.get(customer=self.customer_profile)
-        order.delivery_address = '789 Oak St, City, Country'
+        order.delivery_address = '123 Main St, Anytown, NY 12345'
         order.save()
         
         # Check if the shipping address info is correctly updated
-        self.assertEqual(order.delivery_address, '789 Oak St, City, Country')
+        self.assertEqual(order.delivery_address, '123 Main St, Anytown, NY 12345')
             
 class InvalidShippingAddressTestCase(TestCase):
     def setUp(self):
@@ -430,7 +430,6 @@ class InvalidShippingAddressTestCase(TestCase):
             'length': 10.0,
             'package_weight': 10.0,
             'pickup_or_dropoff': 'pickup',
-            'pickup_or_dropoff': 'pickup',  # Assume the same form is used for pickup or dropoff
             'pickup_address': '',  # Invalid address (empty string)
             'delivery_address': '', # Invalid address (empty string)
             # Add other required fields as needed
@@ -440,3 +439,5 @@ class InvalidShippingAddressTestCase(TestCase):
         # Check if the response indicates that the order was not placed
         self.assertEqual(response.status_code, 200)
         self.assertFalse(Order.objects.exists())  # Ensure no order was created
+        
+
