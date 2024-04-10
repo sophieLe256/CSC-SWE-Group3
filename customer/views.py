@@ -29,18 +29,63 @@ from decimal import Decimal
 from django.contrib.auth.forms import PasswordChangeForm
 from django.contrib.auth import update_session_auth_hash
 from django.utils import timezone
+import usaddress
+
+import imaplib
+import email
+import re
+import requests
+from django.core.validators import EmailValidator
+from django.core.exceptions import ValidationError
+from email_validator import validate_email, EmailNotValidError
+from django.utils.html import strip_tags
+
+def validate_us_address(address):
+    try:
+        
+        address = address.upper()
+        # Parse the address
+        parsed_address, address_type = usaddress.tag(address)
+        
+        # Check if the address contains all required components
+        if 'PlaceName' not in parsed_address or \
+           'StateName' not in parsed_address:
+            return False
+        
+        # Check if StateName is a valid state abbreviation
+        valid_states = ['AL', 'AK', 'AZ', 'AR', 'CA', 'CO', 'CT', 'DE', 'FL', 'GA', 'HI', 'ID', 'IL', 'IN', 'IA', 'KS', 'KY', 'LA', 'ME', 'MD', 'MA', 'MI', 'MN', 'MS', 'MO', 'MT', 'NE', 'NV', 'NH', 'NJ', 'NM', 'NY', 'NC', 'ND', 'OH', 'OK', 'OR', 'PA', 'RI', 'SC', 'SD', 'TN', 'TX', 'UT', 'VT', 'VA', 'WA', 'WV', 'WI', 'WY']
+        if parsed_address['StateName'] not in valid_states:
+            return False
+        
+        # Check if ZipCode is numeric
+        if not parsed_address['ZipCode'].isdigit():
+            return False
+        
+        # If all checks pass, return True
+        return True
+    
+    except usaddress.RepeatedLabelError:
+        # If the address contains repeated labels, it's likely invalid
+       return False
 
 
 @login_required
 def submit_customer_service_message(request):
     if request.method == 'POST':
-        customer = Customer.objects.get(user_id=request.user.id)
+        customer = Customer.objects.get(user_id=request.user.id) 
         message = request.POST.get('message')
+        if not message.strip():  
+            return JsonResponse({'error': 'Message cannot be empty'}, status=400) 
         CustomerServiceMessage.objects.create(
             customer=customer,
             message=message,
             status='Open'
         )
+        Feedback.objects.create(
+            customer=customer,
+            comment=message
+        )
+        
         return redirect('customer-dashboard')
     return redirect('customer-dashboard')
 
@@ -140,9 +185,11 @@ def customer_signup(request):
             else:
                 print("User authentication failed.")
                 messages.error(request, 'Failed to authenticate the user.')
+            
+            messages.success(request, 'Account created successfully. Please login.')
+            return redirect('customer-login')
     
     return render(request, 'customer/customer_signup.html')
-
 
 def customer_login(request):
     if request.method == 'POST':
@@ -171,10 +218,76 @@ def customer_login(request):
 @login_required
 def customer_profile(request):
     customer = Customer.objects.get(user_id=request.user.id)
-    context = {
-        'customer': customer
-    }
-    return render(request, 'customer/customer_profile.html', context)
+    if request.method == 'POST':
+        customer.first_name = request.POST.get('first_name')
+        customer.last_name = request.POST.get('last_name')
+        customer.address = request.POST.get('address')
+        customer.phone = request.POST.get('phone')
+        
+        new_email = request.POST.get('email')
+        if new_email != customer.email:
+            try:
+                EmailValidator()(new_email)
+                
+                try:
+                    valid_email = validate_email(new_email, check_deliverability=True)
+                    customer.email = valid_email.email
+                    customer.email_verified = False
+                    
+                    subject = 'Verify Your Email'
+                    html_message = render_to_string('customer/verification_email.html', {'customer': customer})
+                    plain_message = strip_tags(html_message)
+                    from_email = settings.DEFAULT_FROM_EMAIL
+                    to_email = customer.email
+                    send_mail(subject, plain_message, from_email, [to_email], html_message=html_message)
+                    
+                except EmailNotValidError as e:
+                    if request.META.get('HTTP_X_REQUESTED_WITH') == 'XMLHttpRequest':
+                        return JsonResponse({'success': False, 'error': 'Email does not exist.'})
+                    else:
+                        messages.error(request, 'Email does not exist.')
+                        return redirect('customer-dashboard')
+                    
+            except ValidationError as e:
+                if request.META.get('HTTP_X_REQUESTED_WITH') == 'XMLHttpRequest':
+                    return JsonResponse({'success': False, 'error': 'Invalid email format.'})
+                else:
+                    messages.error(request, 'Invalid email format.')
+                    return redirect('customer-dashboard')
+
+        notification_preference = request.POST.get('notification_preference')
+        customer.notification_preference = notification_preference == 'on'
+        
+        if customer.notification_preference:
+            subject = 'Notification Preference Updated'
+            html_message = render_to_string('customer/notification_preference_email.html', {'customer': customer})
+            plain_message = strip_tags(html_message)
+            from_email = settings.DEFAULT_FROM_EMAIL
+            to_email = customer.email
+            send_mail(subject, plain_message, from_email, [to_email], html_message=html_message)
+        else:
+            subject = 'Notification Preference Updated'
+            html_message = render_to_string('customer/notification_preference_disabled_email.html', {'customer': customer})
+            plain_message = strip_tags(html_message)
+            from_email = settings.DEFAULT_FROM_EMAIL
+            to_email = customer.email
+            send_mail(subject, plain_message, from_email, [to_email], html_message=html_message)
+        
+        customer.save()
+        messages.success(request, 'Profile updated successfully.')
+        return redirect('customer-dashboard')
+    
+    return redirect('customer-dashboard')
+
+def verify_email(request, customer_id, token):
+    customer = get_object_or_404(Customer, id=customer_id)
+    if default_token_generator.check_token(customer, token):
+        customer.email_verified = True
+        customer.save()
+        messages.success(request, 'Your email has been verified.')
+    else:
+        messages.error(request, 'Invalid verification link.')
+    return redirect('customer-profile')
 
 @login_required
 def place_order(request):
@@ -189,6 +302,18 @@ def place_order(request):
             pickup_or_dropoff = form.cleaned_data['pickup_or_dropoff']
             pickup_address = form.cleaned_data['pickup_address']
             delivery_address = form.cleaned_data['delivery_address']
+            
+            # Validate pickup address if pickup option is chosen
+            if pickup_or_dropoff == 'pickup':
+                if not validate_us_address(pickup_address):
+                    form.add_error('pickup_address', 'Invalid pickup address')
+                    return render(request, 'customer/order_form.html', {'form': form})
+
+            # Validate delivery address
+            if not validate_us_address(delivery_address):
+                form.add_error('delivery_address', 'Invalid delivery address')
+                return render(request, 'customer/order_form.html', {'form': form})
+            
             shipping_type = form.cleaned_data['shipping_type']
 
             print(f"Form data: Height={height}, Width={width}, Length={length}, Weight={package_weight}, PickupOrDropoff={pickup_or_dropoff}, PickupAddress={pickup_address}, DeliveryAddress={delivery_address}, ShippingType={shipping_type}")
@@ -217,6 +342,14 @@ def place_order(request):
                     estimated_cost=estimated_cost_data['total'],
                     status='Processing'
                 )
+                if customer.email_verified and customer.notification_preference:
+                    subject = 'New Order Placed'
+                    html_message = render_to_string('customer/new_order_email.html', {'order': order})
+                    plain_message = strip_tags(html_message)
+                    from_email = settings.DEFAULT_FROM_EMAIL
+                    to_email = customer.email
+                    send_mail(subject, plain_message, from_email, [to_email], html_message=html_message)
+                    
                 print(f"Order created: {order}")
                 return redirect('customer-dashboard')
     else:
@@ -247,8 +380,32 @@ def customer_dashboard(request):
     customer_service_messages = CustomerServiceMessage.objects.filter(customer=customer)
 
     order_form = OrderForm()
+    
 
     if request.method == 'POST':
+        if 'profile_form' in request.POST:
+            # Update customer profile information
+            customer.first_name = request.POST.get('first_name')
+            customer.last_name = request.POST.get('last_name')
+            customer.address = request.POST.get('address')
+            customer.phone = request.POST.get('phone')
+            
+            new_email = request.POST.get('email')
+            password = request.POST.get('password')
+            if new_email and password:
+                if request.user.check_password(password):
+                    customer.email = new_email
+                    request.user.email = new_email
+                    request.user.save()
+                else:
+                    messages.error(request, 'Invalid password.')
+            
+            notification_preference = request.POST.get('notification_preference')
+            customer.notification_preference = notification_preference == 'on'
+            
+            customer.save()
+            messages.success(request, 'Profile updated successfully.')
+        
         if 'order_form' in request.POST:
             order_form = OrderForm(request.POST)
             if order_form.is_valid():
@@ -288,6 +445,10 @@ def customer_dashboard(request):
                 message=message,
                 status='Open'
             )
+            Feedback.objects.create(
+            customer=customer,
+            comment=message
+            )
             return redirect('customer-dashboard')
 
     context = {
@@ -301,6 +462,18 @@ def customer_dashboard(request):
     print("Rendering customer dashboard")
     return render(request, 'customer/customer_dashboard.html', context)
 
+@login_required
+def cancel_order(request):
+    if request.method == 'POST':
+        order_id = request.POST.get('order_id')
+        order = Order.objects.get(id=order_id)
+        if order.status == 'Processing':
+            order.delete()  # Delete the order from the database
+            return redirect('customer-dashboard')
+        else:
+            messages.error(request, 'This order cannot be canceled.')
+    # Handle invalid requests or orders that cannot be cancelled
+    return render(request, 'customer_dashboard.html')
 
 
 
@@ -464,15 +637,26 @@ def process_complaint(complaint):
 @login_required
 def customer_profile(request):
     customer = Customer.objects.get(user_id=request.user.id)
+    
     if request.method == 'POST':
-        # Update customer profile information
-        customer.first_name = request.POST.get('first_name')
-        customer.last_name = request.POST.get('last_name')
-        customer.address = request.POST.get('address')
-        customer.phone = request.POST.get('phone')
-        customer.save()
-        messages.success(request, 'Profile updated successfully.')
-    return render(request, 'customer/customer_profile.html', {'customer': customer})
+        # Retrieve form data
+        first_name = request.POST.get('first_name', '').strip()
+        last_name = request.POST.get('last_name', '').strip()
+        address = request.POST.get('address', '').strip()
+        phone = request.POST.get('phone', '').strip()
+        
+        # Validate form data
+        if not first_name or not last_name or not address or not phone:
+            messages.error(request, 'All fields are required.')
+        else:
+            # Update customer profile information
+            customer.first_name = first_name
+            customer.last_name = last_name
+            customer.address = address
+            customer.phone = phone
+            customer.save()
+        
+    return render(request, 'customer/customer_dashboard.html', {'customer': customer})
 
 
 @login_required
@@ -492,7 +676,6 @@ def admin_profile(request):
         return redirect('customer-profile')
 
 @login_required
-
 def business_portal(request):
     packages = Package.objects.all().order_by('-created_at')
     user_type = request.session.get('user_type')

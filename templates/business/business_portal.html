@@ -101,10 +101,37 @@ tr:nth-child(even) {
     </div>
     <div class="tab-content active-content" id="Inventory">
     <h2>Inventory</h2>
+ <div id="add-shipment-container">
+       <button id="add-shipment-btn" disabled>Add Shipment</button>
+       <div id="shipment-dropdown" style="display: none;">
+         <select id="shipment-select">
+         <option value="">Select Shipment</option>
+         {% for shipment in shipments %}
+             <option value="{{ shipment.id }}">{{ shipment.id }}</option>
+         {% endfor %}
+         <option value="new">Add New Shipment</option>
+     </select>
+     <select id="vehicle-select">
+    <option value="">Select Vehicle</option>
+    {% for vehicle in vehicles %}
+        {% if vehicle.vehicle_status == 'Available' %}
+            <option value="{{ vehicle.vehicle_id }}" data-volume="{{ vehicle.volume_capacity }}" data-weight="{{ vehicle.weight_capacity }}">
+                {{ vehicle.vehicle_model }} ({{ vehicle.vehicle_plate }}) - Volume: {{ vehicle.volume_capacity }} cu ft, Weight: {{ vehicle.weight_capacity }} lbs
+            </option>
+        {% endif %}
+    {% endfor %}
+</select>
+     </select>
+         <button id="create-shipment-btn">Create Shipment</button>
+       </div>
+     </div>
+
+    
     <div id="inventory_content">
         <table>
             <thead>
                 <tr>
+                <th>Select</th>
                     <th>Order Number</th>
                     <th>Customer</th>
                     <th>Dimensions</th>
@@ -116,6 +143,7 @@ tr:nth-child(even) {
             <tbody>
                 {% for order in orders %}
                 <tr>
+                	<td><input type="checkbox" name="package_ids" value="{{ order.id }}" {% if order.status != 'Processing' %}disabled{% endif %}></td>               
                     <td>{{ order.order_number }}</td>
                     <td>{{ order.customer.first_name }} {{ order.customer.last_name }}</td>
                     <td>{{ order.height }} x {{ order.width }} x {{ order.length }}</td>
@@ -127,11 +155,13 @@ tr:nth-child(even) {
                             <select name="status" onchange="this.form.submit()">
                                 <option value="Processing" {% if order.status == 'Processing' %}selected{% endif %}>Processing</option>
                                 <option value="Shipped" {% if order.status == 'Shipped' %}selected{% endif %}>Shipped</option>
+                                <option value="Dispatched" {% if order.status == 'Dispatched' %}selected{% endif %}>Dispatched</option>
                                 <option value="Delivered" {% if order.status == 'Delivered' %}selected{% endif %} {% if order.status == 'Delivered' %}disabled{% endif %}>Delivered</option>
                                 <option value="Cancelled" {% if order.status == 'Cancelled' %}selected{% endif %}>Cancelled</option>
                             </select>
                         </form>
                     </td>
+                    
                 </tr>
                 {% empty %}
                 <tr>
@@ -167,7 +197,11 @@ tr:nth-child(even) {
                     <tr>
                         <td>{{ driver.driver_id }}</td>
                         <td>{{ driver.driver_name }}</td>
+                        {% if driver.vehicle %}
                         <td>{{ driver.vehicle.vehicle_model }} ({{ driver.vehicle.vehicle_plate }})</td>
+                        {% else %}
+                        <td>No vehicle assigned</td>
+                        {% endif %}
                     </tr>
                     {% empty %}
                     <tr>
@@ -208,85 +242,55 @@ tr:nth-child(even) {
                 </tbody>
             </table>
         </div>
-        <!-- <div class="tab-content" id="Packages">
-            <h2>Packages</h2>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Package ID</th>
-                        <th>Customer</th>
-                        <th>Description</th>
-                        <th>Weight</th>
-                        <th>Dimensions</th>
-                        <th>Status</th>
-                        <th>Created At</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for package in packages %}
-                    <tr>
-                        <td>{{ package.package_id }}</td>
-                        <td>{{ package.customer.first_name }} {{ package.customer.last_name }}</td>
-                        <td>{{ package.package_description }}</td>
-                        <td>{{ package.package_weight }}</td>
-                        <td>{{ package.package_dimensions }}</td>
-                        <td>
-                            {% if package.package_status == 'pending' %}
-                            <form action="{% url 'business:update-package-status' package.package_id %}" method="post">
-                                {% csrf_token %}
-                                <select name="status" onchange="this.form.submit()">
-                                    <option value="pending" {% if package.package_status == 'pending' %}selected{% endif %}>Pending</option>
-                                    <option value="delivered" {% if package.package_status == 'delivered' %}selected{% endif %}>Delivered</option>
-                                    <option value="canceled" {% if package.package_status == 'canceled' %}selected{% endif %}>Canceled</option>
-                                </select>
-                            </form>
-                            {% else %}
-                            {{ package.package_status }}
-                            {% endif %}
-                        </td>
-                        <td>{{ package.created_at }}</td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="7">No packages found.</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div> -->
-        <div class="tab-content" id="Shipments">
-    <h2>Shipments</h2>
-    <form action="{% url 'business:create-shipment' %}" method="post">
-        {% csrf_token %}
-        <table>
-            <thead>
-                <tr>
-                    <th>Select</th>
-                    <th>Package ID</th>
-                    <th>Customer</th>
-                    <th>Status</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for package in packages %}
-                {% if package.package_status == 'Processing' %}
-                <tr>
-                    <td><input type="checkbox" name="package_ids" value="{{ package.package_id }}"></td>
-                    <td>{{ package.package_id }}</td>
-                    <td>{{ package.customer.first_name }} {{ package.customer.last_name }}</td>
-                    <td>{{ package.package_status }}</td>
-                </tr>
-                {% endif %}
-                {% empty %}
-                <tr>
-                    <td colspan="4">No processing packages found.</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-        <button type="submit">Create Shipment</button>
-    </form>
+
+ <div class="tab-content" id="Shipments">
+<h2>Shipments</h2>
+<form action="{% url 'business:create-shipment' %}" method="post">
+    {% csrf_token %}
+    <table>
+        <thead>
+            <tr>
+                <th>Shipment ID</th>
+                <th>Packages</th>
+                <th>Vehicle</th>
+                <th>Status</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for shipment in shipments %}
+            <tr>
+                <td>{{ shipment.id }}</td>
+                <td>
+                    <ul>
+                        {% for package in shipment.package_set.all %}
+                        <li>{{ package.package_id }}</li>
+                        {% endfor %}
+                    </ul>
+                </td>
+                <td>{{ shipment.vehicle.vehicle_model }} ({{ shipment.vehicle.vehicle_plate }})</td>
+                <td>{{ shipment.status }}</td>
+                <td>
+                    <form action="{% url 'business:mark-shipment-delivered' shipment.id %}" method="post">
+                        {% csrf_token %}
+                        <button type="submit">Mark as Delivered</button>
+                    </form>
+                    <form action="{% url 'business:mark-shipment-returned' shipment.id %}" method="post">
+                        {% csrf_token %}
+                        <button type="submit">Mark as Returned</button>
+                    </form>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="5">No shipments found.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</form>
 </div>
+
 </div>
         <div class="tab-content" id="Feedback">
             <h2>Feedback</h2>
@@ -317,61 +321,180 @@ tr:nth-child(even) {
         </div>
         <div class="tab-content" id="Vehicles">
             <h2>Vehicles</h2>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Vehicle ID</th>
-                        <th>Model</th>
-                        <th>Plate Number</th>
-                        <th>Status</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for vehicle in vehicles %}
-                    <tr>
-                        <td>{{ vehicle.vehicle_id }}</td>
-                        <td>{{ vehicle.vehicle_model }}</td>
-                        <td>{{ vehicle.vehicle_plate }}</td>
-                        <td>{{ vehicle.vehicle_status }}</td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="4">No vehicles found.</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+            <button id="add-vehicle-btn">Add Vehicle</button>
+         <div id="vehicle-form" style="display: none;">
+             <form method="post">
+                 {% csrf_token %}
+                 <input type="hidden" name="create_vehicle">
+                 <label for="vehicle_model">Vehicle Model:</label>
+                 <input type="text" id="vehicle_model" name="vehicle_model" required>
+
+                 <label for="vehicle_plate">Vehicle Plate:</label>
+                 <input type="text" id="vehicle_plate" name="vehicle_plate" required>
+
+                 <label for="vehicle_status">Vehicle Status:</label>
+                 <select id="vehicle_status" name="vehicle_status" required>
+                     <option value="Available">Available</option>
+                     <option value="In Transit">In Transit</option>
+                     <option value="Out of Service">Out of Service</option>
+                 </select>
+
+                 <label for="volume_capacity">Volume Capacity:</label>
+                 <input type="number" id="volume_capacity" name="volume_capacity" step="0.01" required>
+
+                 <label for="weight_capacity">Weight Capacity:</label>
+                 <input type="number" id="weight_capacity" name="weight_capacity" step="0.01" required>
+
+                 <button type="submit">Add Vehicle</button>
+             </form>
+         </div>
+           <table>
+         <thead>
+             <tr>
+                 <th>Vehicle ID</th>
+                 <th>Model</th>
+                 <th>Plate Number</th>
+                 <th>Status</th>
+                 <th>Volume Capacity</th>
+                 <th>Weight Capacity</th>
+                 <th></th>
+             </tr>
+         </thead>
+         <tbody>
+             {% for vehicle in vehicles %}
+             <tr>
+                 <td>{{ vehicle.vehicle_id }}</td>
+                 <td>{{ vehicle.vehicle_model }}</td>
+                 <td>{{ vehicle.vehicle_plate }}</td>
+                 <td>{{ vehicle.vehicle_status }}</td>
+                 <td>{{ vehicle.volume_capacity }}</td>
+                 <td>{{ vehicle.weight_capacity }}</td>
+                 <td>
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="remove_vehicle">
+                    <input type="hidden" name="vehicle_id" value="{{ vehicle.vehicle_id }}">
+                    <button type="submit">Remove</button>
+                </form>
+            </td>
+             </tr>
+             {% empty %}
+             <tr>
+                 <td colspan="6">No vehicles found.</td>
+             </tr>
+             {% endfor %}
+         </tbody>
+     </table>
         </div>
     </div>
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        var i, x, tablinks;
-        x = document.getElementsByClassName("tab-content");
-        for (i = 0; i < x.length; i++) {
-            x[i].style.display = "none";
-        }
-        tablinks = document.getElementsByClassName("tab");
-        for (i = 0; i < x.length; i++) {
-            tablinks[i].className = tablinks[i].className.replace(" active-tab", "");
-        }
-        var activeTab = "{{ active_tab }}";
-        document.getElementById(activeTab).style.display = "block";
-        document.querySelector('.tab[onclick="openTab(\'' + activeTab + '\')"]').className += " active-tab";
-    });
-
-    function openTab(tabName) {
-        var i, x, tablinks;
-        x = document.getElementsByClassName("tab-content");
-        for (i = 0; i < x.length; i++) {
-            x[i].style.display = "none";
-        }
-        tablinks = document.getElementsByClassName("tab");
-        for (i = 0; i < x.length; i++) {
-            tablinks[i].className = tablinks[i].className.replace(" active-tab", "");
-        }
-        document.getElementById(tabName).style.display = "block";
-        event.currentTarget.className += " active-tab";
+document.addEventListener('DOMContentLoaded', function() {
+    var i, x, tablinks;
+    x = document.getElementsByClassName("tab-content");
+    for (i = 0; i < x.length; i++) {
+      x[i].style.display = "none";
     }
+    tablinks = document.getElementsByClassName("tab");
+    for (i = 0; i < x.length; i++) {
+      tablinks[i].className = tablinks[i].className.replace(" active-tab", "");
+    }
+    var activeTab = "{{ active_tab }}";
+    document.getElementById(activeTab).style.display = "block";
+    document.querySelector('.tab[onclick="openTab(\'' + activeTab + '\')"]').className += " active-tab";
+  });
+
+  function openTab(tabName) {
+    var i, x, tablinks;
+    x = document.getElementsByClassName("tab-content");
+    for (i = 0; i < x.length; i++) {
+      x[i].style.display = "none";
+    }
+    tablinks = document.getElementsByClassName("tab");
+    for (i = 0; i < x.length; i++) {
+      tablinks[i].className = tablinks[i].className.replace(" active-tab", "");
+    }
+    document.getElementById(tabName).style.display = "block";
+    event.currentTarget.className += " active-tab";
+  }
+
+  const checkboxes = document.querySelectorAll('input[name="package_ids"]');
+  const addShipmentBtn = document.getElementById('add-shipment-btn');
+  const shipmentDropdown = document.getElementById('shipment-dropdown');
+  const createShipmentBtn = document.getElementById('create-shipment-btn');
+
+  checkboxes.forEach(checkbox => {
+    checkbox.addEventListener('change', () => {
+      const checkedCount = document.querySelectorAll('input[name="package_ids"]:checked').length;
+      addShipmentBtn.disabled = checkedCount === 0;
+    });
+  });
+
+  addShipmentBtn.addEventListener('click', () => {
+    shipmentDropdown.style.display = 'block';
+  });
+
+  createShipmentBtn.addEventListener('click', () => {
+      const selectedShipmentId = document.getElementById('shipment-select').value;
+      const checkedPackageIds = Array.from(document.querySelectorAll('input[name="package_ids"]:checked')).map(checkbox => checkbox.value);
+      const selectedVehicleId = document.getElementById('vehicle-select').value;
+      const selectedVehicle = document.querySelector(`#vehicle-select option[value="${selectedVehicleId}"]`);
+      const remainingVolume = parseFloat(selectedVehicle.dataset.volume);
+      const remainingWeight = parseFloat(selectedVehicle.dataset.weight);
+
+      const totalVolume = checkedPackageIds.reduce((sum, packageId) => {
+          const packageDimensions = document.querySelector(`tr[data-package-id="${packageId}"] td:nth-child(4)`).textContent.split('x');
+          const volume = packageDimensions[0] * packageDimensions[1] * packageDimensions[2];
+          return sum + volume;
+      }, 0);
+
+      const totalWeight = checkedPackageIds.reduce((sum, packageId) => {
+          const packageWeight = parseFloat(document.querySelector(`tr[data-package-id="${packageId}"] td:nth-child(5)`).textContent);
+          return sum + packageWeight;
+      }, 0);
+
+      if (totalVolume > remainingVolume || totalWeight > remainingWeight) {
+          alert('Selected packages exceed vehicle capacity');
+          return;
+      }
+
+    
+    // Make an AJAX request to create the shipment and add the selected packages
+    fetch('/business/create-shipment/', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': '{{ csrf_token }}'
+      },
+      body: JSON.stringify({
+        shipmentId: selectedShipmentId,
+        packageIds: checkedPackageIds
+      })
+    })
+    .then(response => response.json())
+    .then(data => {
+      // Update the shipments table with the new shipment
+      const shipmentsTable = document.getElementById('shipments-table');
+      const newRow = shipmentsTable.insertRow();
+      newRow.innerHTML = `
+        <td>${data.shipmentId}</td>
+        <td>${data.packageIds.join(', ')}</td>
+        <td>Processing</td>
+      `;
+      
+      // Clear the selected checkboxes and hide the shipment dropdown
+      checkboxes.forEach(checkbox => checkbox.checked = false);
+      addShipmentBtn.disabled = true;
+      shipmentDropdown.style.display = 'none';
+    })
+    .catch(error => console.error('Error:', error));
+  });
+  const addVehicleBtn = document.getElementById('add-vehicle-btn');
+  const vehicleForm = document.getElementById('vehicle-form');
+
+  addVehicleBtn.addEventListener('click', () => {
+      vehicleForm.style.display = 'block';
+  });
+   
 </script>
 </body>
 

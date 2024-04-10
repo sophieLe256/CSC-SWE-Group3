@@ -91,14 +91,14 @@ LOGIN_REDIRECT_URL = '/customer-dashboard/'
 SESSION_COOKIE_AGE = 900
 SESSION_SAVE_EVERY_REQUEST = True
 
-
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.gmail.com'  # Replace with your email provider's SMTP server
-EMAIL_PORT = 587
+EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_USE_TLS = True
-EMAIL_HOST_USER = 'your-email@example.com'  # Replace with your email address
-EMAIL_HOST_PASSWORD = 'your-email-password'  # Replace with your email password
-DEFAULT_FROM_EMAIL = 'your-email@example.com'  # Replace with your email address
+EMAIL_PORT = 587
+EMAIL_HOST_USER = 'couriertracking01@gmail.com'  # Replace with your Gmail email address
+EMAIL_HOST_PASSWORD = ''  # Replace with the app password you 
+DEFAULT_FROM_EMAIL = 'couriertracking01@gmail.com'
+
 
 CSRF_USE_SESSIONS = True
 STATIC_URL = '/static/'

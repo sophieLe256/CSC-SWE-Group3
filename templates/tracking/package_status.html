@@ -1,31 +1,186 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<h1>Track Your Shipment</h1>
-<form id="tracking-form" method="post" action="{% url 'package-status' %}">
-    {% csrf_token %}
-    <label for="tracking_number">Tracking Number:</label>
-    <input type="text" id="tracking_number" name="tracking_number" required>
-    <button type="submit">Track</button>
-</form>
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        background-color: white;
+    }
 
-<div id="package-status-container">
-    {% if order %}
-    <h2>Package Status</h2>
-    <p>Tracking Number: {{ order.order_number }}</p>
-    <p>Package Description: {{ order.description }}</p>
-    <p>Pickup Address: {{ order.pickup_address }}</p>
-    <p>Delivery Address: {{ order.delivery_address }}</p>
-    <p>Status: {{ order.status }}</p>
-    <p>Last Updated: {{ order.updated_at }}</p>
-    <p>Package Dimensions: {{ order.height }} x {{ order.width }} x {{ order.length }}</p>
-    {% if map_html %}
-    <div class="map-container">
-        {{ map_html|safe }}
+    h1 {
+        color: #00415a;
+        font-size: 25px;
+        margin: 30px 50px;
+    }
+    .container {
+        margin: 70px auto;
+        justify-items: center;
+        background-color: white;
+        border-radius: 10px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        border: 1px solid #ccc;
+        padding: 10px;
+        max-width: 1000px;
+        max-height: 100%;
+        /* Adjusted max-height */
+    }
+
+    .container form {
+        margin: 20px 50px;
+    }
+
+    .input-wrapper {
+        display: flex;
+        justify-content: space-between;
+    }
+
+    .left-section {
+        flex-grow: 1;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        padding: 5px;
+        display: flex;
+        justify-content: space-around;
+    }
+
+    .right-section {
+        flex-grow: 1;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        padding: 5px;
+        margin-left: 10px;
+        width: 50px;
+        height: 100%;
+    }
+
+    .right-section p {
+        font-size: 12px;
+    }
+
+    label {
+        display: block;
+        margin: 20px 0px;
+        color: #333;
+        font-size: 18px;
+        font-weight: bold;
+    }
+
+    input[type="text"] {
+        width: calc(100% - 24px);
+        padding: 15px;
+        font-size: 18px;
+        border-radius: 5px;
+        box-sizing: border-box;
+        color: black;
+    }
+
+    button[type="submit"] {
+        background-color: #00415a;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        padding: 12px 15px;
+        font-size: 16px;
+        cursor: pointer;
+        margin-top: 30px;
+        transition: background-color 0.3s ease;
+    }
+
+    button[type="submit"]:hover {
+        background-color: #002d3a;
+    }
+
+    .list {
+        padding: 10px 0;
+    }
+
+    .list li {
+        margin: 20px 0;
+        list-style: none;
+        text-decoration: none;
+    }
+    .dashboard-link {
+        position: fixed;
+        top: 20px;
+        /* Adjust bottom position */
+        left: 20px;
+        padding: 10px 20px;
+        background-color: #00415a;
+        color: #fff;
+        text-decoration: none;
+        border-radius: 5px;
+        font-size: 16px;
+        z-index: 9999;
+    }
+
+    .dashboard-link:hover {
+        background-color: #4a76a8;
+    }
+</style>
+
+<body>
+    <div class="container">
+        <h1>Track Your Shipment</h1>
+        <form method="post" action="{% url 'package-status' %}">
+            {% csrf_token %}
+            <p>Enter tracking numbers to quickly check the status of your shipment.</p>
+            <div class="input-wrapper">
+                <div class="left-section">
+                    <div class="form-group">
+                        <label for="shipping-type">
+                            <h4>Shipping Type:</h4>
+                        </label>
+                        <select id="shipping-type" name="shipping_type" required class="form-control">
+                            <option value="ground">Ground</option>
+                            <option value="priority">Priority</option>
+                            <option value="nextDay">Next Day</option>
+                        </select>
+                    </div>
+                    <div class="tracking">
+                        <label for="tracking_number">Tracking Number(s):</label>
+                        <input type="text" id="tracking_number" name="tracking_number" required>
+                        <div id="package-status-container">
+                            {% if order %}
+                            <h2>Package Status</h2>
+                            <p>Tracking Number: {{ order.order_number }}</p>
+                            <p>Package Description: {{ order.description }}</p>
+                            <p>Pickup Address: {{ order.pickup_address }}</p>
+                            <p>Delivery Address: {{ order.delivery_address }}</p>
+                            <p>Status: {{ order.status }}</p>
+                            <p>Last Updated: {{ order.updated_at }}</p>
+                            <p>Package Dimensions: {{ order.height }} x {{ order.width }} x {{ order.length }}</p>
+                            {% if map_html %}
+                            <div class="map-container">
+                                {{ map_html|safe }}
+                            </div>
+                            {% endif %}
+                            {% elif error %}
+                            <p>{{ error }}</p>
+                            {% endif %}
+                        </div>
+                        <button type="submit">Track</button>
+                    </div>
+                </div>
+                <div class="right-section">
+                    <p>
+                        You don't have any shipments in transit or recently delivered. When you do, they'll appear here
+                        and you can
+                        quickly track them!
+                    </p>
+                </div>
+
+            </div>
+            <!-- Added list -->
+            <ul class="list">
+                <li><a href="/us/en/help-and-support/faqs/tracking-monitoring.html" target="lightbox">Tracking FAQs</a>
+                </li>
+                <li><a href="/us/en/help-and-support.html#/contact_us" target="_self">Contact Us</a></li>
+                <li><a href="/us/en/legal/tracking-terms-and-conditions.html" target="lightbox">Terms and Conditions</a>
+                </li>
+            </ul>
+        </form>
     </div>
-    {% endif %}
-    {% elif error %}
-    <p>{{ error }}</p>
-    {% endif %}
-</div>
+    <a href="{% url 'customer-dashboard' %}" class="dashboard-link">Go back to dashboard</a>
+</body>
+
 {% endblock %}

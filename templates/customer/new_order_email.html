@@ -1,0 +1,11 @@
+<p>Dear {{ order.customer.first_name }},</p>
+<p>Thank you for placing a new order with us. Here are the details of your order:</p>
+<p>Order Number: {{ order.order_number }}</p>
+<p>Package Dimensions: {{ order.height }} x {{ order.width }} x {{ order.length }}</p>
+<p>Package Weight: {{ order.package_weight }}</p>
+<p>Pickup or Dropoff: {{ order.pickup_or_dropoff }}</p>
+<p>Delivery Address: {{ order.delivery_address }}</p>
+<p>Shipping Type: {{ order.shipping_type }}</p>
+<p>Estimated Cost: ${{ order.estimated_cost }}</p>
+<p>We will keep you updated on the status of your package.</p>
+<p>Best regards,<br>The TrackTrek Team</p>

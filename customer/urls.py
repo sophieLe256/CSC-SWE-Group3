@@ -2,7 +2,7 @@ from django.urls import path
 from django.conf.urls.static import static
 from django.conf import settings
 from . import views
-from .views import customer_login, initialize_customer_data, customer_signup, customer_options, customer_profile, customer_dashboard, customer_logout, place_order, submit_feedback, forgot_password, submit_customer_service_message
+from .views import customer_login, initialize_customer_data, customer_signup, customer_options, customer_profile, customer_dashboard, customer_logout, place_order, submit_feedback, forgot_password, submit_customer_service_message, cancel_order
 
 urlpatterns = [
     path('', customer_options, name='customer-options'),
@@ -17,4 +17,6 @@ urlpatterns = [
     path('submit-feedback/', submit_feedback, name='submit-feedback'),
     path('forgot-password/', forgot_password, name='forgot-password'),
     path('submit-customer-service-message/', submit_customer_service_message, name='submit-customer-service-message'),
+    path('cancel_order/', cancel_order, name='cancel-order'),
+    path('verify-email/<int:customer_id>/<str:token>/', views.verify_email, name='verify-email'),
 ]

@@ -220,3 +220,36 @@ nav ul li a {
     }
   }
 }
+.social-login-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding-top: 1rem;
+  margin-left: 1rem;
+  margin-right: 1rem;
+}
+
+.social-login-item {
+  width: 3rem;
+  height: 3rem;
+}
+
+.social-login-img {
+  width: 90%;
+  height: 90%;
+  object-fit: cover;
+  object-position: center;
+  border-radius: 50%;
+  margin-left: 0.25rem;
+  margin-right: 0.25rem;
+}
+
+.social-login-img-twitter {
+  width: 90%;
+  height: 90%;
+  object-fit: scale-down;
+  object-position: center;
+  border-radius: 50%;
+  margin-left: 0.25rem;
+  margin-right: 0.25rem;
+}
