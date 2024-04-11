@@ -52,7 +52,7 @@
 		.tab-content.active {
 			display: block;
 		}
-		
+
 
 		/* Style for Customer Service tab content */
 		#customer-service-form {
@@ -138,6 +138,7 @@
 			background-color: #ccc;
 		}
 
+
 		.profile-container {
 			display: flex;
 			justify-content: space-between;
@@ -146,7 +147,7 @@
 
 		.profile-info,
 		.update-profile {
-			width: 48%;
+			width: 47%;
 			padding: 20px;
 			background-color: #f5f5f5;
 			border-radius: 5px;
@@ -221,8 +222,8 @@
 		<div id="Orders" class="tab-content active">
 			<div id="new-order">
 				<h2>New Order</h2>
-				<button onclick="window.location.href='{% url 'place-order' %}'"
-					class="btn btn-primary">Place an Order</button>
+				<button onclick="window.location.href='{% url 'place-order' %}'" class="btn btn-primary">Place an
+					Order</button>
 			</div>
 			<h3>Active Orders</h3>
 			{% if active_orders %}
@@ -237,7 +238,7 @@
 						<th>Shipping Type</th>
 						<th>Status</th>
 						<th>Estimated Cost</th>
-						<th> </th> 
+						<th> </th>
 					</tr>
 				</thead>
 				<tbody>
@@ -257,8 +258,8 @@
 								{% csrf_token %}
 								<input type="hidden" name="order_id" value="{{ order.id }}">
 								<button type="submit">Cancel</button>
-							 </form>
-							 {% endif %}
+							</form>
+							{% endif %}
 						</td>
 					</tr>
 					{% empty %}
@@ -394,61 +395,68 @@
 			<p>No customer service messages yet.</p>
 			{% endif %}
 		</div>
-		<div id="Profile Settings" class="tab-content">
-			<h2>Profile Settings</h2>
-			<div class="profile-info">
-				<h3>Profile Information</h3>
-				<p>
-					<strong>Name:</strong> {{ customer.first_name }} {{ customer.last_name }}
-				</p>
-				<p>
-					<strong>Address:</strong> {{ customer.address }}
-				</p>
-				<p>
-					<strong>Email:</strong> {{ customer.email }}
-				</p>
-				<p>
-					<strong>Phone:</strong> {{ customer.phone }}
-				</p>
-				<!-- <a href="{% url 'change-password' %}">Change Password</a> -->
-				<button onclick="window.location.href='{% url 'change-password' %}'">Change Password</button>
-			</div>
-			<div class="update-profile">
-				<h3>Update Profile</h3>
-				<form method="post" action="{% url 'customer-profile' %}">
-					{% csrf_token %}
-                     <label for="first_name">First Name:</label>
-                     <input type="text" id="first_name" name="first_name" value="{{ customer.first_name }}" required>
-                     
-                     <label for="last_name">Last Name:</label>
-                     <input type="text" id="last_name" name="last_name" value="{{ customer.last_name }}" required>
-                     
-                     <label for="address">Address:</label>
-                     <input type="text" id="address" name="address" value="{{ customer.address }}" required>
-                     
-                     <label for="email">Email:</label>
-                     <input type="email" id="email" name="email" value="{{ customer.email }}" required>
-                     
-                     <label for="phone">Phone:</label>
-                     <input type="tel" id="phone" name="phone" value="{{ customer.phone }}" required>
-                     
-                     <label for="password">Password:</label>
-                     <input type="password" id="password" name="password" required>
-                     
-                     <label for="notification_preference">Receive Package Status Notifications:</label>
-                     <input type="checkbox" id="notification_preference" name="notification_preference" {% if customer.notification_preference %}checked{% endif %}>
-                        {% if messages %}
+			<div id="Profile Settings" class="tab-content">
+				<h2>Profile Settings</h2>
+				<div class="profile-container">
+				<div class="profile-info">
+					<h3>Profile Information</h3>
+					<p>
+						<strong>Name:</strong> {{ customer.first_name }} {{ customer.last_name }}
+					</p>
+					<p>
+						<strong>Address:</strong> {{ customer.address }}
+					</p>
+					<p>
+						<strong>Email:</strong> {{ customer.email }}
+					</p>
+					<p>
+						<strong>Phone:</strong> {{ customer.phone }}
+					</p>
+					<!-- <a href="{% url 'change-password' %}">Change Password</a> -->
+					<button onclick="window.location.href='{% url 'change-password' %}'">Change Password</button>
+				</div>
+				<div class="update-profile">
+					<h3>Update Profile</h3>
+					<form method="post" action="{% url 'customer-profile' %}">
+						{% csrf_token %}
+						<label for="first_name">First Name:</label>
+						<input type="text" id="first_name" name="first_name" value="{{ customer.first_name }}" required>
+
+						<label for="last_name">Last Name:</label>
+						<input type="text" id="last_name" name="last_name" value="{{ customer.last_name }}" required>
+
+						<label for="address">Address:</label>
+						<input type="text" id="address" name="address" value="{{ customer.address }}" required>
+
+						<label for="email">Email:</label>
+						<input type="email" id="email" name="email" value="{{ customer.email }}" required>
+
+						<label for="phone">Phone:</label>
+						<input type="tel" id="phone" name="phone" value="{{ customer.phone }}" required>
+
+						<label for="password">Password:</label>
+						<input type="password" id="password" name="password" required>
+
+						<label for="notification_preference">
+							<input type="checkbox" id="notification_preference" name="notification_preference" {% if customer.notification_preference %}checked{% endif %}>
+							Receive Package Status Notifications
+						</label>
+
+						{% if messages %}
 						<div class="messages" style="color: red;">
 							{% for message in messages %}
-							<p{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</p>
-							{% endfor %}
+							<p{% if message.tags %} class="{{ message.tags }}" {% endif %}>{{ message }}</p>
+								{% endfor %}
 						</div>
 						{% endif %}
+
 						<button type="submit">Save Changes</button>
-                     
-                 </form>
-                 <div id="notification-preference-message" style="display: none; color: green;">Email notification preference saved.</div>
-                 <div id="profile-form-error" class="error-message" style="color: red;"></div>
+					</form>
+					<div id="notification-preference-message" style="display: none; color: green;">Email notification
+						preference saved.</div>
+					<div id="profile-form-error" class="error-message" style="color: red;"></div>
+				</div>
+
 			</div>
 		</div>
 	</div>

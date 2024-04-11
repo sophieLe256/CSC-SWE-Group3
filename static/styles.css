@@ -239,17 +239,6 @@ nav ul li a {
   height: 90%;
   object-fit: cover;
   object-position: center;
-  border-radius: 50%;
-  margin-left: 0.25rem;
-  margin-right: 0.25rem;
-}
-
-.social-login-img-twitter {
-  width: 90%;
-  height: 90%;
-  object-fit: scale-down;
-  object-position: center;
-  border-radius: 50%;
   margin-left: 0.25rem;
   margin-right: 0.25rem;
 }
