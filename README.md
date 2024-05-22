@@ -40,6 +40,70 @@ To get started with the Courier Tracking Website, follow these steps:
 
 4. **GPS Libraries**: Install any necessary libraries for GPS functionality, such as geopy.
 
-  ```bash
-  pip install geopy
+   ```bash
+   pip install geopy
 
+### Steps
+1. **Clone the Repository**:
+   ```bash
+   git clone https://github.com/sophieLe256/CSC-SWE-Group3
+   cd repository
+      
+2. **Install Dependencies**:
+- Navigate to the project directory and install the required dependencies using pip:
+
+  ```bash
+  pip install -r requirements.txt
+
+3. **Set Up Google Cloud**:
+- Create a Project: Set up a new project in Google Cloud.
+- Enable APIs: Enable the necessary APIs for your project (e.g., Maps API, Cloud Storage).
+- Authentication: Download the service account key and set the **GOOGLE_APPLICATION_CREDENTIALS** environment variable.
+
+   ```bash
+   export GOOGLE_APPLICATION_CREDENTIALS="/path/to/your/service-account-file.json"
+  
+4. **Configure Django Settings**:
+- Update your Django settings.py with the appropriate configurations for Google Cloud, GPS integration, and any other required settings.
+
+5. **Run Migrations**:
+- Apply database migrations to set up your database schema:
+
+   ```bash
+   python manage.py migrate
+  
+6. **Run the Development Server**
+- Start the Django development server to test your application locally:
+   ```bash
+   python manage.py runserver
+  
+### :rocket: Deployment
+For deployment, follow these steps:
+
+1. **Set Up Google App Engine**
+- Create an App Engine Application: Follow the instructions here.
+- Deploy: Use the following command to deploy your application:
+  
+   ```bash
+   gcloud app deploy
+
+2. **Configure Domain and SSL**
+- Set up a custom domain if required and configure SSL certificates for secure access.
+  
+### :globe_with_meridians: Usage
+Once deployed, users can visit the website to track their parcels, receive notifications, and utilize other features mentioned above.
+
+### :lock: Security
+Ensure the following for securing your application:
+
+Use HTTPS for secure communication.
+Implement strong authentication and authorization mechanisms.
+Regularly update dependencies to mitigate vulnerabilities.
+### :memo: Contributing
+We welcome contributions! Please read our CONTRIBUTING.md for guidelines on how to contribute to this project.
+
+### :mailbox_with_mail: Contact
+For any inquiries or issues, please contact us at email@example.com.
+
+### :scroll: License
+This project is licensed under the MIT License. See the LICENSE file for details.
